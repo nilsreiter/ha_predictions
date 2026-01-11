@@ -69,7 +69,6 @@ class LogisticRegression:
             tuple: (predicted_classes, probabilities) or None
 
         """
-        # TODO: Fix issue "ValueError: shapes (1,5) and (2,) not aligned: 5 (dim 1) != 2 (dim 0)"
         if self.weights is not None:
             threshold = 0.5
             y_hat = np.dot(x, self.weights) + self.bias

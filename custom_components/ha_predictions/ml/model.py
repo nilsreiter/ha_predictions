@@ -41,6 +41,10 @@ class Model:
                     data_copy[col].map(category_to_code).fillna(-1).astype(int)
                 )
 
+        # Remove target column if present to match training data shape
+        if self.target_column and self.target_column in data_copy.columns:
+            data_copy = data_copy.drop(columns=[self.target_column])
+
         # Predict
         x_pred = data_copy.to_numpy()
         predictions, probabilities = self.model_final.predict(x_pred)
