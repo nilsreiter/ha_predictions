@@ -7,6 +7,8 @@
 
 A Home Assistant custom integration that uses machine learning to predict entity states based on feature entities. Train models to predict when lights turn on/off, switches change state, or other automations trigger based on the state of other entities in your home.
 
+> ⚠️ **Alpha Stage**: This integration is currently in alpha development. Features may change, and there may be bugs or incomplete functionality. Use at your own risk and please report any issues you encounter.
+
 ## Features
 
 - 🤖 **Machine Learning Integration**: Uses logistic regression to learn patterns from your Home Assistant entities
@@ -118,26 +120,6 @@ Once installed and configured, the integration creates several entities:
 - Python packages (automatically installed):
   - pandas
   - numpy
-
-## Troubleshooting
-
-### Model Not Training
-
-- Ensure you have at least 10 samples in your dataset
-- Check that your target entity has changed state multiple times during training
-- Verify that feature entities are providing varied data
-
-### Low Prediction Accuracy
-
-- Collect more training data over a longer period
-- Add more relevant feature entities
-- Ensure feature entities are actually correlated with the target entity's behavior
-
-### Integration Not Loading
-
-- Check Home Assistant logs for errors
-- Verify all dependencies are installed
-- Ensure you're running a compatible version of Home Assistant
 
 ## Development
 
