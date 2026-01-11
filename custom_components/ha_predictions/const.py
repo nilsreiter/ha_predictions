@@ -1,6 +1,7 @@
 """Constants for integration_blueprint."""
 
 from logging import Logger, getLogger
+from re import M
 
 LOGGER: Logger = getLogger(__package__)
 
@@ -17,3 +18,5 @@ MSG_DATASET_CHANGED = "DATASET_CHANGED"
 
 OP_MODE_TRAIN = "TRAINING"
 OP_MODE_PROD = "PRODUCTION"
+
+MIN_DATASET_SIZE = 10

@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from propcache.api import cached_property
 
+from custom_components.ha_predictions.const import MSG_DATASET_CHANGED
+
 from .entity import HAPredictionEntity
 
 if TYPE_CHECKING:
@@ -69,6 +71,7 @@ class RunTrainingButton(HAPredictionEntity, ButtonEntity):
     ):
         super().__init__(coordinator)
         self.entity_description = entity_description
+        coordinator.register(self)
 
     async def async_press(self) -> None:
         """Handle the button press."""
@@ -77,3 +80,12 @@ class RunTrainingButton(HAPredictionEntity, ButtonEntity):
     @cached_property
     def unique_id(self) -> str | None:
         return self.coordinator.config_entry.entry_id + "-run-training"
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator.training_ready
+
+    def notify(self, msg: str) -> None:
+        """Handle notifications from the coordinator."""
+        if msg == MSG_DATASET_CHANGED:
+            self.schedule_update_ha_state()
