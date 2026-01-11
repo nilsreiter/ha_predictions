@@ -34,6 +34,7 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _errors = {}
         if user_input is not None:
             await self.async_set_unique_id(
+                ## TODO: Find an alternative way to set unique_id
                 ## Do NOT use this in production code
                 ## The unique_id should never be something that can change
                 ## https://developers.home-assistant.io/docs/config_entries_config_flow_handler#unique-ids
