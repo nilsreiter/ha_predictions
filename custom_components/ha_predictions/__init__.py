@@ -126,9 +126,7 @@ async def async_reload_entry(
                 datafile,
             )
             # Use lambda to pass missing_ok parameter
-            await hass.async_add_executor_job(
-                lambda: datafile.unlink(missing_ok=True)
-            )
+            await hass.async_add_executor_job(lambda: datafile.unlink(missing_ok=True))
 
         # Clear the features_changed flag after processing
         hass.config_entries.async_update_entry(

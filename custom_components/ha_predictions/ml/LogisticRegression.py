@@ -7,7 +7,6 @@ import numpy as np
 # TODO: Add regularization
 # TODO: Add better convergence checks
 # TODO: Optimize performance with vectorized operations, but without introducing additional dependencies
-# TODO: Add unit tests
 # TODO: Deal with missing data (gracefully handle NaNs)
 class LogisticRegression:
     weights: np.ndarray | NoneType = None
@@ -62,6 +61,7 @@ class LogisticRegression:
 
         Returns:
             tuple: (predicted_classes, probabilities) or None
+
         """
         if self.weights is not None:
             threshold = 0.5
