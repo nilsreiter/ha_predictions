@@ -31,6 +31,13 @@ class Model:
 
         data_copy = data.copy()
 
+        # Remove target column if present to match training data shape
+        if self.target_column and self.target_column in data_copy.columns:
+            self.logger.debug(
+                "Dropping target column '%s' from prediction input", self.target_column
+            )
+            data_copy = data_copy.drop(columns=[self.target_column])
+
         # Apply factorization to features only
         for col, categories in self.factors.items():
             if col == self.target_column:
@@ -40,13 +47,6 @@ class Model:
                 data_copy[col] = (
                     data_copy[col].map(category_to_code).fillna(-1).astype(int)
                 )
-
-        # Remove target column if present to match training data shape
-        if self.target_column and self.target_column in data_copy.columns:
-            self.logger.debug(
-                "Dropping target column '%s' from prediction input", self.target_column
-            )
-            data_copy = data_copy.drop(columns=[self.target_column])
 
         # Predict
         x_pred = data_copy.to_numpy()
