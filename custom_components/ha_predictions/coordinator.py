@@ -152,7 +152,23 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         Returns:
             Tuple of (x_train, x_test, y_train, y_test)
 
+        Raises:
+            ValueError: If test_size is not between 0.0 and 1.0, or if dataset is too small
+
         """
+        # Validate inputs
+        if len(x) == 0 or len(y) == 0:
+            msg = "Cannot split empty dataset"
+            raise ValueError(msg)
+
+        if not 0.0 < test_size < 1.0:
+            msg = f"test_size must be between 0.0 and 1.0, got {test_size}"
+            raise ValueError(msg)
+
+        if len(x) != len(y):
+            msg = "x and y must have the same length"
+            raise ValueError(msg)
+
         rng = np.random.default_rng(random_state)
 
         # Combine x and y for easier splitting
@@ -173,6 +189,9 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             rng.shuffle(class_indices)
 
             # Calculate split point
+            # Note: Using max(1, ...) ensures at least one sample per class in test set.
+            # This may result in actual test proportion slightly exceeding test_size
+            # when some classes have very few samples.
             n_test = max(1, int(len(class_indices) * test_size))
 
             # Split indices
