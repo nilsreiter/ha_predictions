@@ -10,17 +10,16 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+
 # from sklearn.model_selection import train_test_split
 # from sklearn.neural_network import MLPClassifier
 # from sklearn.preprocessing import LabelEncoder
-
 from .const import (
     CONF_FEATURE_ENTITY,
     CONF_TARGET_ENTITY,
     MSG_DATASET_CHANGED,
     MSG_TRAINING_DONE,
     OP_MODE_TRAIN,
-    OP_MODE_PROD,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -134,9 +133,62 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
                 self._run_training, self.dataset.copy()
             )
 
+    def _stratified_train_test_split(
+        self,
+        x: pd.DataFrame,
+        y: pd.Series,
+        test_size: float = 0.25,
+        random_state: int = 1,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+        """
+        Perform stratified train-test split based on target column.
+
+        Args:
+            x: Feature DataFrame
+            y: Target Series
+            test_size: Proportion of dataset to include in test split (default 0.25)
+            random_state: Random seed for reproducibility
+
+        Returns:
+            Tuple of (x_train, x_test, y_train, y_test)
+
+        """
+        rng = np.random.default_rng(random_state)
+
+        # Combine x and y for easier splitting
+        df_combined = x.copy()
+        df_combined["__target__"] = y
+
+        # Group by target value to maintain class distribution
+        train_indices = []
+        test_indices = []
+
+        for target_value in df_combined["__target__"].unique():
+            # Get indices for this class
+            class_indices = df_combined[
+                df_combined["__target__"] == target_value
+            ].index.tolist()
+
+            # Shuffle indices
+            rng.shuffle(class_indices)
+
+            # Calculate split point
+            n_test = max(1, int(len(class_indices) * test_size))
+
+            # Split indices
+            test_indices.extend(class_indices[:n_test])
+            train_indices.extend(class_indices[n_test:])
+
+        # Create train and test sets
+        x_train = x.loc[train_indices].reset_index(drop=True)
+        x_test = x.loc[test_indices].reset_index(drop=True)
+        y_train = y.loc[train_indices].reset_index(drop=True)
+        y_test = y.loc[test_indices].reset_index(drop=True)
+
+        return x_train, x_test, y_train, y_test
+
     def _run_training(self, df: pd.DataFrame) -> None:
         """Run the actual training."""
-
         # Store categories instead of encoders
         categories = {}
         for col in df.select_dtypes(include=["object"]).columns:
@@ -148,13 +200,23 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         x = df.iloc[:, :-1]  # All columns except last
         y = df.iloc[:, -1]
 
-        # x_train, x_test, y_train, y_test = train_test_split(
-        #    x, y, stratify=y, random_state=1
-        # )
-        # self.model = MLPClassifier(random_state=1, max_iter=10).fit(x_train, y_train)
+        # Perform stratified train-test split based on last column (target)
+        x_train, x_test, _y_train, _y_test = self._stratified_train_test_split(
+            x, y, test_size=0.25, random_state=1
+        )
 
-        # Evaluate on test split
-        self.accuracy = 0.7  # float(self.model.score(x_test, y_test))
+        _LOGGER.info(
+            "Split data into train (n=%d) and test (n=%d) sets",
+            len(x_train),
+            len(x_test),
+        )
+
+        # TODO: Implement model training
+        # self.model = MLPClassifier(random_state=1, max_iter=10).fit(x_train, _y_train)
+
+        # TODO: Evaluate on test split
+        # self.accuracy = float(self.model.score(x_test, _y_test))
+        self.accuracy = 0.7  # Placeholder until model is implemented
 
         # Notify entities of finished training
         [e.notify(MSG_TRAINING_DONE) for e in self.entity_registry]
