@@ -40,6 +40,10 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 unique_id=slugify(user_input[CONF_TARGET_ENTITY])
             )
             self._abort_if_unique_id_configured()
+            # TODO: 1. Validate entities exist and are of correct type
+            # 2. Create a nicer name for the entry
+            # 3. Check for duplicates based on target entity
+            # 4. Possibly fetch initial data to ensure entities are valid
             return self.async_create_entry(
                 title="Prediction for " + user_input[CONF_TARGET_ENTITY],
                 data=user_input,
