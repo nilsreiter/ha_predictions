@@ -56,7 +56,6 @@ class LogisticRegression:
 
         Returns:
             tuple: (predicted_classes, probabilities) or None
-
         """
         if self.weights is not None:
             threshold = 0.5

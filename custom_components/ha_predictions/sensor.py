@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 from types import NoneType
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 
 from .const import (
     CONF_FEATURE_ENTITY,
-    MIN_DATASET_SIZE,
-    MSG_DATASET_CHANGED,
+    ET_PERFORMANCE_SENSOR,
     MSG_PREDICTION_MADE,
     MSG_TRAINING_DONE,
+    MSG_DATASET_CHANGED,
+    MIN_DATASET_SIZE,
 )
 from .entity import HAPredictionEntity
 

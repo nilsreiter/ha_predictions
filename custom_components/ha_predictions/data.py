@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from os import uname
+from typing import TYPE_CHECKING, Callable
+
+from yaml import unsafe_load
 
 from custom_components.ha_predictions.entity import DeviceInfo
 
