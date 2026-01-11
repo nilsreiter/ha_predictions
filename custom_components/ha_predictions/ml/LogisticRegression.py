@@ -73,8 +73,8 @@ class LogisticRegression:
         return (None, None)
 
     def score(self, x: np.ndarray, y_gold: np.ndarray) -> float:
-        y_pred = self.predict(x)
-        matches = (y_gold == y_pred).sum()
+        y_pred_classes, _ = self.predict(x)
+        matches = (y_gold == y_pred_classes).sum()
         total = len(y_gold)
         return matches / total
 
