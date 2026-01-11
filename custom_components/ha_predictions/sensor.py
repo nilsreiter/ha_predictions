@@ -1,8 +1,7 @@
-"""Sensor platform for integration_blueprint."""
+"""Sensor platform for HA Predictions integration."""
 
 from __future__ import annotations
 
-from types import NoneType
 from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
@@ -17,6 +16,8 @@ from .const import (
 from .entity import HAPredictionEntity
 
 if TYPE_CHECKING:
+    from types import NoneType
+
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -64,11 +65,14 @@ async def async_setup_entry(
 
 
 class DatasetSensor(HAPredictionEntity, SensorEntity):
+    """Sensor to monitor the size of the dataset used for training."""
+
     def __init__(
         self,
         coordinator: HAPredictionUpdateCoordinator,
         entity_description: SensorEntityDescription,
-    ):
+    ) -> None:
+        """Initialize the dataset size sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = self.coordinator.config_entry.entry_id + "-dataset-size"
@@ -83,6 +87,7 @@ class DatasetSensor(HAPredictionEntity, SensorEntity):
 
     @property
     def should_poll(self) -> bool:
+        """Return False as the entity pushes updates."""
         return False
 
     @property
@@ -96,11 +101,14 @@ class DatasetSensor(HAPredictionEntity, SensorEntity):
         }
 
     def notify(self, msg: str) -> None:
+        """Handle notifications from the coordinator."""
         if msg is MSG_DATASET_CHANGED:
             self.schedule_update_ha_state()
 
 
 class CurrentPredictionSensor(HAPredictionEntity, SensorEntity):
+    """Sensor to display the current prediction made by the model."""
+
     prediction_label: str | NoneType = None
     prediction_probability: float | NoneType = None
 
@@ -108,7 +116,8 @@ class CurrentPredictionSensor(HAPredictionEntity, SensorEntity):
         self,
         coordinator: HAPredictionUpdateCoordinator,
         entity_description: SensorEntityDescription,
-    ):
+    ) -> None:
+        """Initialize the current prediction sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = (
@@ -131,13 +140,16 @@ class CurrentPredictionSensor(HAPredictionEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
+        """Return True if a prediction is available."""
         return self.prediction_label is not None
 
     @property
     def should_poll(self) -> bool:
+        """Return False as the entity pushes updates."""
         return False
 
     def notify(self, msg: str) -> None:
+        """Handle notifications from the coordinator."""
         if (
             msg is MSG_PREDICTION_MADE
             and self.coordinator.current_prediction is not None
@@ -148,11 +160,14 @@ class CurrentPredictionSensor(HAPredictionEntity, SensorEntity):
 
 
 class PredictionPerformanceSensor(HAPredictionEntity, SensorEntity):
+    """Sensor to monitor the prediction performance of the model."""
+
     def __init__(
         self,
         coordinator: HAPredictionUpdateCoordinator,
         entity_description: SensorEntityDescription,
-    ):
+    ) -> None:
+        """Initialize the prediction performance sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = self.coordinator.config_entry.entry_id + "-accuracy"
@@ -167,12 +182,15 @@ class PredictionPerformanceSensor(HAPredictionEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
+        """Return True if accuracy data is available."""
         return self.coordinator.accuracy is not None
 
     @property
     def should_poll(self) -> bool:
+        """Return False as the entity pushes updates."""
         return False
 
     def notify(self, msg: str) -> None:
+        """Handle notifications from the coordinator."""
         if msg is MSG_TRAINING_DONE:
             self.schedule_update_ha_state()

@@ -1,3 +1,5 @@
+"""Select entity to choose operation mode for HA Predictions."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -37,19 +39,23 @@ async def async_setup_entry(
 
 
 class SelectModeEntity(HAPredictionEntity, SelectEntity):
-    _attr_options: list[str] = [OP_MODE_TRAIN, OP_MODE_PROD]
+    """Select entity to choose operation mode."""
 
     def __init__(
         self,
         coordinator: HAPredictionUpdateCoordinator,
         entity_description: SelectEntityDescription,
-    ):
+    ) -> None:
+        """Initialize the select entity."""
         super().__init__(coordinator)
+        self._attr_options: list[str] = [OP_MODE_TRAIN, OP_MODE_PROD]
+
         self.entity_description = entity_description
         self.coordinator.register(self)
 
     @cached_property
     def unique_id(self) -> str | None:
+        """Return a unique ID."""
         return self.coordinator.config_entry.entry_id + "-select-operation-mode"
 
     @property
@@ -59,6 +65,7 @@ class SelectModeEntity(HAPredictionEntity, SelectEntity):
 
     @property
     def available(self) -> bool:
+        """Return if entity is available."""
         return True
 
     async def async_select_option(self, option: str) -> None:
