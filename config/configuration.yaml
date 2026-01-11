@@ -7,6 +7,6 @@ homeassistant:
 
 # https://www.home-assistant.io/integrations/logger/
 logger:
-  default: info
+  default: warning
   logs:
-    custom_components.integration_blueprint: debug
+    custom_components.ha_predictions: debug
