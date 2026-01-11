@@ -12,8 +12,8 @@
     "custom_components.ha_predictions"
   ],
   "requirements": [
-    "pandas",
-    "numpy"
+    "pandas>=2.0.0",
+    "numpy>=1.26.4"
   ],
   "version": "0.1.0"
 }
