@@ -115,10 +115,21 @@ class Model:
             rng.shuffle(cls_indices)
 
             n_cls = len(cls_indices)
-            test_size_cls = max(int(n_cls * 0.25), 1 if n_cls > 1 else 0)
+            # Ensure at least 1 test sample per class if there are 2+ samples
+            # For single-sample classes, put in training to avoid empty training sets
+            if n_cls >= 2:
+                test_size_cls = max(int(n_cls * 0.25), 1)
+            else:
+                test_size_cls = 0
 
             test_indices.extend(cls_indices[:test_size_cls])
             train_indices.extend(cls_indices[test_size_cls:])
+
+        # Ensure at least 1 test sample overall (fallback for edge cases)
+        if len(test_indices) == 0 and len(train_indices) > 1:
+            # Move one sample from train to test
+            test_indices.append(train_indices[-1])
+            train_indices = train_indices[:-1]
 
         # Shuffle the final indices to mix classes
         train_indices = np.array(train_indices)
