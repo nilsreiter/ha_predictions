@@ -1,8 +1,6 @@
 """Constants for integration_blueprint."""
 
-from ctypes.wintypes import MSG
 from logging import Logger, getLogger
-from re import M
 
 LOGGER: Logger = getLogger(__package__)
 DOMAIN = "ha_predictions"

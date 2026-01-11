@@ -7,7 +7,7 @@ from homeassistant import config_entries
 from homeassistant.helpers import selector
 from slugify import slugify
 
-from .const import CONF_FEATURE_ENTITY, CONF_TARGET_ENTITY, DOMAIN, LOGGER
+from .const import CONF_FEATURE_ENTITY, CONF_TARGET_ENTITY, DOMAIN
 
 
 class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):

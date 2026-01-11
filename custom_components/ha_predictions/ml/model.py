@@ -98,14 +98,36 @@ class Model:
             df[col] = codes
             categories[col] = uniques
 
-        # train/test split in pure numpy
-        # TODO: Stratify split based on last column
+        # train/test split in pure numpy with stratification
         dfn = df.to_numpy()
-        np.random.Generator(np.random.PCG64()).shuffle(dfn)
+        rng = np.random.Generator(np.random.PCG64())
 
-        nrows = dfn.shape[0]
-        test_size = max(int(nrows * 0.25), 1)
-        train, test = dfn[:test_size, :], dfn[test_size:, :]
+        # Get target column (last column)
+        y = dfn[:, -1]
+        unique_classes = np.unique(y)
+
+        train_indices = []
+        test_indices = []
+
+        # Stratify split based on last column
+        for cls in unique_classes:
+            cls_indices = np.where(y == cls)[0]
+            rng.shuffle(cls_indices)
+
+            n_cls = len(cls_indices)
+            test_size_cls = max(int(n_cls * 0.25), 1 if n_cls > 1 else 0)
+
+            test_indices.extend(cls_indices[:test_size_cls])
+            train_indices.extend(cls_indices[test_size_cls:])
+
+        # Shuffle the final indices to mix classes
+        train_indices = np.array(train_indices)
+        test_indices = np.array(test_indices)
+        rng.shuffle(train_indices)
+        rng.shuffle(test_indices)
+
+        train = dfn[train_indices, :]
+        test = dfn[test_indices, :]
         self.logger.debug("Data used for training: %s", str(train))
         self.logger.debug("Data used for testing: %s", str(test))
 
