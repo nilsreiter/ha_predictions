@@ -6,15 +6,15 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import ATTRIBUTION
-from .coordinator import BlueprintDataUpdateCoordinator
+from .coordinator import HAPredictionUpdateCoordinator
 
 
-class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinator]):
+class HAPredictionEntity(CoordinatorEntity[HAPredictionUpdateCoordinator]):
     """BlueprintEntity class."""
 
     _attr_attribution = ATTRIBUTION
 
-    def __init__(self, coordinator: BlueprintDataUpdateCoordinator) -> None:
+    def __init__(self, coordinator: HAPredictionUpdateCoordinator) -> None:
         """Initialize."""
         super().__init__(coordinator)
         self._attr_unique_id = coordinator.config_entry.entry_id
@@ -26,3 +26,6 @@ class IntegrationBlueprintEntity(CoordinatorEntity[BlueprintDataUpdateCoordinato
                 ),
             },
         )
+
+    def notify(self, msg: str) -> None:
+        pass

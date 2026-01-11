@@ -1,0 +1,17 @@
+{
+  "domain": "ha_predictions",
+  "name": "HA Predictions",
+  "codeowners": [
+    "@nilsreiter"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/nilsreiter/ml",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/nilsreiter/ml/issues",
+  "requirements": [
+    "keras",
+    "pandas",
+    "numpy"
+  ],
+  "version": "0.1.0"
+}

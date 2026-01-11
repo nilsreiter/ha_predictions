@@ -3,23 +3,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
+
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.loader import Integration
 
-    from .api import IntegrationBlueprintApiClient
-    from .coordinator import BlueprintDataUpdateCoordinator
+    from .coordinator import HAPredictionUpdateCoordinator
 
 
-type IntegrationBlueprintConfigEntry = ConfigEntry[IntegrationBlueprintData]
+type HAPredictionConfigEntry = ConfigEntry[HAPredictionData]
 
 
 @dataclass
-class IntegrationBlueprintData:
+class HAPredictionData:
     """Data for the Blueprint integration."""
 
-    client: IntegrationBlueprintApiClient
-    coordinator: BlueprintDataUpdateCoordinator
+    coordinator: HAPredictionUpdateCoordinator
     integration: Integration
+    datafile: Path
+    # target_entity: str
+    # feature_entities: list[str]
