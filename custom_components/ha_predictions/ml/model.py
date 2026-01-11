@@ -128,8 +128,7 @@ class Model:
         # Ensure at least 1 test sample overall (fallback for edge cases)
         if len(test_indices) == 0 and len(train_indices) > 1:
             # Move one sample from train to test
-            test_indices.append(train_indices[-1])
-            train_indices = train_indices[:-1]
+            test_indices.append(train_indices.pop())
 
         # Shuffle the final indices to mix classes
         train_indices = np.array(train_indices)
