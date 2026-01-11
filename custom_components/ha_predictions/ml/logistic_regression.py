@@ -10,6 +10,8 @@ import numpy as np
 # TODO: Add better convergence checks
 # TODO: Optimize performance with vectorized operations, but without introducing additional dependencies
 # TODO: Deal with missing data (gracefully handle NaNs)
+# TODO: Normalize/standardize features
+# TODO: Oversampling for imbalanced datasets
 class LogisticRegression:
     """Logistic Regression Classifier."""
 

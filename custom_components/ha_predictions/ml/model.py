@@ -7,7 +7,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .LogisticRegression import LogisticRegression
+from .logistic_regression import LogisticRegression
 
 
 class Model:
