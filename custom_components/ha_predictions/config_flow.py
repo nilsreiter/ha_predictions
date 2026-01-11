@@ -46,11 +46,11 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             feature_entities = user_input[CONF_FEATURE_ENTITY]
 
             # Check if target entity exists
-            target_state = self.hass.states.get(target_entity)
-            if target_state is None:
+            if self.hass.states.get(target_entity) is None:
                 _errors["base"] = "target_entity_not_found"
-            else:
-                # Check if target entity is of correct domain
+
+            # Check if target entity is of correct domain
+            if not _errors:
                 target_domain = target_entity.split(".")[0]
                 if target_domain not in ["light", "switch", "input_boolean"]:
                     _errors["base"] = "target_entity_wrong_domain"
@@ -64,9 +64,6 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
             # If no errors, create the entry
             if not _errors:
-                # 2. Create a nicer name for the entry
-                # 3. Check for duplicates based on target entity
-                # 4. Possibly fetch initial data to ensure entities are valid
                 return self.async_create_entry(
                     title="Prediction for " + user_input[CONF_TARGET_ENTITY],
                     data=user_input,
