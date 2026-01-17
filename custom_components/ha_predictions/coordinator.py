@@ -12,16 +12,20 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import (
     CONF_FEATURE_ENTITY,
     CONF_TARGET_ENTITY,
+    ENTITY_KEY_OPERATION_MODE,
+    ENTITY_KEY_SAMPLING_STRATEGY,
     MIN_DATASET_SIZE,
     MSG_DATASET_CHANGED,
     MSG_PREDICTION_MADE,
-    MSG_TRAINING_SETTINGS_CHANGED,
     MSG_TRAINING_DONE,
-    OP_MODE_PROD,
-    OP_MODE_TRAIN,
+    MSG_TRAINING_SETTINGS_CHANGED,
+    SAMPLING_NONE,
+    SAMPLING_RANDOM,
+    SAMPLING_SMOTE,
+    OperationMode,
 )
 from .ml.exceptions import ModelNotTrainedError
-from .ml.model import Model
+from .ml.model import Model, SamplingStrategy
 
 if TYPE_CHECKING:
     from types import NoneType
@@ -47,7 +51,7 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         self.dataset: pd.DataFrame | NoneType = None
         self.dataset_size: int = 0
         self.model: Model = Model(self.logger)
-        self.operation_mode: str = OP_MODE_TRAIN
+        self.operation_mode: OperationMode = OperationMode.TRAINING
         self.training_ready: bool = False
         self.current_prediction: tuple[str, float] | NoneType = None
 
@@ -73,11 +77,58 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
             self.logger.info("Z-Score normalization disabled.")
 
-    def set_operation_mode(self, mode: str) -> None:
+    def get_option(self, key: str) -> str | NoneType:
+        """Get the current option for a given key."""
+        if key == ENTITY_KEY_OPERATION_MODE:
+            return self.operation_mode.name
+        if key == ENTITY_KEY_SAMPLING_STRATEGY:
+            if "sampling" not in self.model.transformations:
+                return SAMPLING_NONE
+            sampling_type = self.model.transformations["sampling"]["type"]
+            if sampling_type == SamplingStrategy.RANDOM_OVER:
+                return SAMPLING_RANDOM
+            if sampling_type == SamplingStrategy.SMOTE:
+                return SAMPLING_SMOTE
+            self.logger.warning(
+                "Unknown sampling strategy '%s', defaulting to '%s'",
+                sampling_type,
+                SAMPLING_NONE,
+            )
+            return SAMPLING_NONE
+        return None
+
+    def select_option(self, key: str, value: str) -> NoneType:
+        """Change the selected option."""
+        if key == ENTITY_KEY_OPERATION_MODE:
+            self._set_operation_mode(OperationMode[value])
+        elif key == ENTITY_KEY_SAMPLING_STRATEGY:
+            self._set_sampling_strategy(value)
+
+    def _set_operation_mode(self, mode: OperationMode) -> None:
         """Set the operation mode."""
         if mode != self.operation_mode:
             self.operation_mode = mode
             self.logger.info("Operation mode has been changed to %s", mode)
+
+    def _set_sampling_strategy(self, strategy: str) -> NoneType:
+        """Set the sampling strategy for handling imbalanced datasets."""
+        if strategy == SAMPLING_RANDOM:
+            self.model.transformations["sampling"] = {
+                "type": SamplingStrategy.RANDOM_OVER
+            }
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Random oversampling enabled.")
+        elif strategy == SAMPLING_SMOTE:
+            self.model.transformations["sampling"] = {
+                "type": SamplingStrategy.SMOTE,
+                "k_neighbors": 5,
+            }
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("SMOTE enabled.")
+        else:
+            self.model.transformations.pop("sampling", None)
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Sampling disabled.")
 
     def state_changed(self, event: Event[EventStateChangedData]) -> None:
         """Handle state changes of monitored entities."""
@@ -250,13 +301,17 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         # Convert DataFrame to numpy array
         data_numpy = self.dataset.copy().to_numpy()
 
-        if self.operation_mode == OP_MODE_TRAIN:
+        if self.operation_mode == OperationMode.TRAINING:
             await self.hass.async_add_executor_job(self.model.train_eval, data_numpy)
             self.accuracy = self.model.accuracy
             self.logger.info("Training complete, accuracy: %f", self.accuracy)
-        elif self.operation_mode == OP_MODE_PROD:
+        elif self.operation_mode == OperationMode.PRODUCTION:
             await self.hass.async_add_executor_job(self.model.train_final, data_numpy)
         else:
             self.logger.error("Unknown operation mode: %s", self.operation_mode)
             return
         [e.notify(MSG_TRAINING_DONE) for e in self.entity_registry]
+
+        if self.operation_mode == OperationMode.PRODUCTION:
+            # Update prediction after training
+            await self._async_make_prediction()

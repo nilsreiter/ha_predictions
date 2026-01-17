@@ -5,9 +5,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.const import EntityCategory
 from propcache import cached_property
 
-from .const import ENTITY_SUFFIX_OPERATION_MODE, OP_MODE_PROD, OP_MODE_TRAIN
+from .const import (
+    ENTITY_KEY_OPERATION_MODE,
+    ENTITY_KEY_SAMPLING_STRATEGY,
+    SAMPLING_NONE,
+    SAMPLING_RANDOM,
+    SAMPLING_SMOTE,
+    UNDERSCORE,
+    OperationMode,
+)
 from .entity import HAPredictionEntity
 
 if TYPE_CHECKING:
@@ -26,49 +35,79 @@ async def async_setup_entry(
     """Set up the select platform."""
     async_add_entities(
         [
-            SelectModeEntity(
+            HAPredictionSelectEntity(
                 coordinator=entry.runtime_data.coordinator,
-                entity_description=SelectEntityDescription(
-                    key="operation_mode",
-                    name="Mode",
+                entity_description=HAPredictionSelectEntityDescription(
+                    key=ENTITY_KEY_SAMPLING_STRATEGY,
+                    name="Sampling Strategy",
                     icon="mdi:form-dropdown",
+                    options=[SAMPLING_NONE, SAMPLING_RANDOM, SAMPLING_SMOTE],
+                    entity_category=EntityCategory.CONFIG,
+                ),
+            ),
+            HAPredictionSelectEntity(
+                coordinator=entry.runtime_data.coordinator,
+                entity_description=HAPredictionSelectEntityDescription(
+                    key=ENTITY_KEY_OPERATION_MODE,
+                    name="Operation Mode",
+                    icon="mdi:form-dropdown",
+                    options=[
+                        OperationMode.TRAINING.name,
+                        OperationMode.PRODUCTION.name,
+                    ],
                 ),
             ),
         ]
     )
 
 
-class SelectModeEntity(HAPredictionEntity, SelectEntity):
-    """Select entity to choose operation mode."""
+class HAPredictionSelectEntityDescription(SelectEntityDescription):
+    """Describe select entity for HA Predictions."""
+
+
+class HAPredictionSelectEntity(HAPredictionEntity, SelectEntity):
+    """Base class for select entities in HA Predictions."""
 
     def __init__(
         self,
         coordinator: HAPredictionUpdateCoordinator,
-        entity_description: SelectEntityDescription,
+        entity_description: HAPredictionSelectEntityDescription,
     ) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator)
-        self._attr_options: list[str] = [OP_MODE_TRAIN, OP_MODE_PROD]
 
-        self.entity_description = entity_description
+        self.entity_description: HAPredictionSelectEntityDescription = (
+            entity_description
+        )
         self.coordinator.register(self)
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option."""
+        self.coordinator.select_option(self.entity_description.key, option)
+        self.schedule_update_ha_state()
 
     @cached_property
     def unique_id(self) -> str | None:
         """Return a unique ID."""
-        return self.coordinator.config_entry.entry_id + ENTITY_SUFFIX_OPERATION_MODE
-
-    @property
-    def current_option(self) -> str:
-        """Return the current option."""
-        return self.coordinator.operation_mode
+        return (
+            self.coordinator.config_entry.entry_id
+            + UNDERSCORE
+            + self.entity_description.key
+        )
 
     @property
     def available(self) -> bool:
         """Return if entity is available."""
         return True
 
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option."""
-        self.coordinator.set_operation_mode(option)
-        self.schedule_update_ha_state()
+    @property
+    def current_option(self) -> str:
+        """Return the current option."""
+        option = self.coordinator.get_option(self.entity_description.key)
+        if option is not None:
+            return option
+        self.coordinator.logger.warning(
+            "Current option for %s is None, defaulting to first option",
+            self.entity_description.key,
+        )
+        return self.options[0]

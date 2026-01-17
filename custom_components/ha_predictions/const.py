@@ -1,9 +1,12 @@
 """Constants for integration_blueprint."""
 
+from enum import Enum
 from logging import Logger, getLogger
 
 LOGGER: Logger = getLogger(__package__)
 DOMAIN = "ha_predictions"
+
+UNDERSCORE = "_"
 
 CONF_TARGET_ENTITY = "CONF_TARGET_ENTITY"
 CONF_FEATURE_ENTITY = "CONF_FEATURE_ENTITY"
@@ -17,15 +20,24 @@ MSG_OPERATION_MODE_CHANGED = "OPERATION_MODE_CHANGED"
 MSG_PREDICTION_MADE = "PREDICTION_MADE"
 MSG_TRAINING_SETTINGS_CHANGED = "TRAINING_SETTINGS_CHANGED"
 
-OP_MODE_TRAIN = "TRAINING"
-OP_MODE_PROD = "PRODUCTION"
-
 MIN_DATASET_SIZE = 10
 
-ENTITY_SUFFIX_PERFORMANCE = "_performance"
-ENTITY_SUFFIX_DATASET_SIZE = "_dataset_size"
-ENTITY_SUFFIX_CURRENT_PREDICTION = "_current_prediction"
-ENTITY_SUFFIX_OPERATION_MODE = "_operation_mode"
-ENTITY_SUFFIX_STORE_INSTANCE = "_store_instance"
-ENTITY_SUFFIX_RUN_TRAINING = "_run_training"
-ENTITY_SUFFIX_ZSCORES_SWITCH = "_zscores_switch"
+ENTITY_KEY_PERFORMANCE = "performance"
+ENTITY_KEY_DATASET_SIZE = "dataset_size"
+ENTITY_KEY_CURRENT_PREDICTION = "current_prediction"
+ENTITY_KEY_OPERATION_MODE = "operation_mode"
+ENTITY_KEY_STORE_INSTANCE = "store_instance"
+ENTITY_KEY_RUN_TRAINING = "run_training"
+ENTITY_KEY_ZSCORES_SWITCH = "zscores_switch"
+ENTITY_KEY_SAMPLING_STRATEGY = "sampling_strategy"
+
+SAMPLING_NONE = "None"
+SAMPLING_RANDOM = "Random oversampling"
+SAMPLING_SMOTE = "SMOTE"
+
+
+class OperationMode(Enum):
+    """Enumeration for operation modes."""
+
+    TRAINING = "TRAINING"
+    PRODUCTION = "PRODUCTION"
