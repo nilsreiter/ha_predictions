@@ -6,6 +6,9 @@
                 "data": {
                     "CONF_TARGET_ENTITY": "Target Entity",
                     "CONF_FEATURE_ENTITY": "Feature Entities"
+                },
+                "data_description": {
+                    "CONF_FEATURE_ENTITY": "What are good feature entities? Feature entities should have a strong correlation with the target entity you want to predict. For example, if you want to predict the state of a light based on motion sensors and time of day, you would select motion sensors and a time-based entity as feature entities. It may help to reduce the resolution of time-based entities by providing a template sensor that only contains the first digit of minutes (e.g., 10:15 becomes 10:1)."
                 }
             }
         },
