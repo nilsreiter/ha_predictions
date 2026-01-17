@@ -139,6 +139,8 @@ class Model:
                 # Copy numeric data as-is
                 data_encoded[:, col_idx] = column_data.astype(float)
 
+        data_encoded = self._apply_sampling(data_encoded)
+
         # Split features and target
         x_train = data_encoded[:, :-1]
         y_train = data_encoded[:, -1]
