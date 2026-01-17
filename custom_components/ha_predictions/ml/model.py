@@ -115,6 +115,8 @@ class Model:
         # Target column is the last column
         self.target_column_idx = data.shape[1] - 1
 
+        data = self._apply_filtering(data)
+
         # Factorize categorical columns using numpy.unique
         # Create a new array with float dtype to avoid object dtype issues
         data_encoded = np.empty(data.shape, dtype=float)
@@ -168,10 +170,7 @@ class Model:
         """
         self.logger.info("Starting training for evaluation with data: %s", str(data))
 
-        # Remove rows with 'Unavailable' in the target column (last column)
-        filtered_arr = data[data[:, -1] != "unavailable"]
-        # Remove rows with 'unknown' in the target column
-        filtered_arr = filtered_arr[filtered_arr[:, -1] != "unknown"]
+        filtered_arr = self._apply_filtering(data)
 
         # Factorize categorical columns using numpy.unique
         # Create a new array with float dtype to avoid object dtype issues
@@ -248,6 +247,55 @@ class Model:
         self.model_eval.fit(x_train, y_train)
         self.logger.debug("Training ends, model: %s", str(self.model_eval))
         self.accuracy = self.model_eval.score(x_test, y_test)
+
+    def _apply_filtering(
+        self,
+        data: np.ndarray,
+        *,
+        filter_unavailable: bool = True,
+        filter_unknown: bool = True,
+        filter_all_features_invalid: bool = True,
+    ) -> np.ndarray:
+        """
+        Apply filtering to data.
+
+        Args:
+            data: Numpy array with feature data.
+            filter_unavailable: Whether to filter out 'Unavailable' target rows.
+            filter_unknown: Whether to filter out 'unknown' target rows.
+            filter_all_features_invalid: Whether to filter rows with invalid features.
+
+        Returns:
+            Numpy array with filtered data.
+
+        """
+        # Placeholder for future filtering logic
+        self.logger.debug("Applying filtering")
+
+        # Remove rows with 'Unavailable' in the target column (last column)
+        if filter_unavailable:
+            data = data[data[:, -1] != "unavailable"]
+
+        # Remove rows with 'unknown' in the target column
+        if filter_unknown:
+            data = data[data[:, -1] != "unknown"]
+
+        # Remove rows in which all features are invalid (NaN or non-numeric)
+        if filter_all_features_invalid:
+
+            def is_valid_row(row: np.ndarray) -> bool:
+                for value in row[:-1]:  # Exclude target column
+                    try:
+                        float_value = float(value)
+                        if not np.isnan(float_value):
+                            return True
+                    except (ValueError, TypeError):
+                        continue
+                return False
+
+            data = np.array([row for row in data if is_valid_row(row)])
+
+        return data
 
     def _apply_normalization(
         self, data: np.ndarray
