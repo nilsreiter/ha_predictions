@@ -201,8 +201,13 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             "Unknown",
             None,
         ]:
-            self.dataset.loc[len(self.dataset)] = xy
-            self.dataset_size = self.dataset.shape[0]
+            try:
+                self.dataset.loc[len(self.dataset)] = xy
+                self.dataset_size = self.dataset.shape[0]
+            except ValueError:
+                self.logger.exception(
+                    "Error adding data (%s) to dataset: %s", xy, self.dataset
+                )
             self.logger.info(self.dataset)
         self.training_ready = self.dataset_size >= MIN_DATASET_SIZE
 
