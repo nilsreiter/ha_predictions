@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import pandas as pd
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
@@ -139,6 +140,75 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             for entity in self.entity_registry:
                 entity.notify(MSG_PREDICTION_MADE)
 
+    def _factorize_with_numpy(
+        self, df: pd.DataFrame
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        """
+        Factorize categorical columns using numpy.unique and convert to numpy array.
+        
+        Args:
+            df: DataFrame to factorize
+            
+        Returns:
+            Tuple of (numpy_array, factors_dict)
+        """
+        # Convert DataFrame to numpy array
+        data_array = df.to_numpy()
+        factors: dict[str, Any] = {}
+        
+        # Get column names
+        col_names = df.columns.tolist()
+        
+        # Factorize each column that contains strings/objects
+        for col_idx, col_name in enumerate(col_names):
+            column_data = data_array[:, col_idx]
+            
+            # Check if column contains non-numeric data
+            if column_data.dtype == object or not np.issubdtype(column_data.dtype, np.number):
+                # Use numpy.unique to get unique values and their indices
+                unique_values, inverse_indices = np.unique(column_data, return_inverse=True)
+                # Store the unique values for later decoding
+                factors[col_name] = unique_values
+                # Replace column with encoded indices
+                data_array[:, col_idx] = inverse_indices
+        
+        # Convert to appropriate numeric type
+        return data_array.astype(float), factors
+
+    def _encode_instance(self, instance_df: pd.DataFrame) -> np.ndarray:
+        """
+        Encode an instance using stored factors from the model.
+        
+        Args:
+            instance_df: DataFrame with a single instance to encode
+            
+        Returns:
+            Encoded numpy array
+        """
+        # Convert to numpy
+        instance_array = instance_df.to_numpy()
+        col_names = instance_df.columns.tolist()
+        
+        # Apply factorization using stored factors
+        for col_idx, col_name in enumerate(col_names):
+            if col_name in self.model.factors and col_name != self.model.target_column:
+                value = instance_array[0, col_idx]
+                categories = self.model.factors[col_name]
+                
+                # Find the index of the value in categories
+                try:
+                    # For numpy arrays, we need to find the index
+                    idx = np.where(categories == value)[0]
+                    if len(idx) > 0:
+                        instance_array[0, col_idx] = idx[0]
+                    else:
+                        # Value not found in training data, use -1
+                        instance_array[0, col_idx] = -1
+                except (ValueError, TypeError):
+                    instance_array[0, col_idx] = -1
+        
+        return instance_array.astype(float)
+
     def _compute_prediction(self) -> tuple[str, float] | None:
         """
         Compute prediction (blocking operations).
@@ -153,7 +223,10 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             data=[self._get_states_for_entities(include_target=False)],
         )
         self.logger.debug("Instance data for prediction: %s", str(instance_data))
-        return self.model.predict(instance_data)
+        
+        # Encode the instance using model's factors
+        encoded_instance = self._encode_instance(instance_data)
+        return self.model.predict(encoded_instance)
 
     def _initialize_dataframe(self) -> NoneType:
         """Initialize empty dataframe for dataset."""
@@ -233,15 +306,20 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             )
             return
 
+        # Factorize the dataset using numpy.unique
+        data_numpy, factors = self._factorize_with_numpy(self.dataset.copy())
+
         if self.operation_mode == OP_MODE_TRAIN:
             await self.hass.async_add_executor_job(
-                self.model.train_eval, self.dataset.copy()
+                self.model.train_eval, data_numpy
             )
             self.accuracy = self.model.accuracy
             self.logger.info("Training complete, accuracy: %f", self.accuracy)
         elif self.operation_mode == OP_MODE_PROD:
+            # Get target column name
+            target_column = self.dataset.columns.tolist()[-1]
             await self.hass.async_add_executor_job(
-                self.model.train_final, self.dataset.copy()
+                self.model.train_final, data_numpy, factors, target_column
             )
         else:
             self.logger.error("Unknown operation mode: %s", self.operation_mode)
