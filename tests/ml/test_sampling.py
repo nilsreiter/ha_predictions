@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 # Add the ml directory to the path to avoid importing homeassistant dependencies
 ml_path = (
@@ -259,8 +260,6 @@ class TestSMOTE:
         6 samples. With a single sample, there are no neighbors available, so SMOTE
         will fail with a ValueError.
         """
-        import pytest
-        
         x = np.array([[1, 2], [2, 3], [3, 4], [10, 11]])
         y = np.array([0, 0, 0, 1])
 
