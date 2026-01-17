@@ -168,7 +168,6 @@ class Model:
         """
         self.logger.info("Starting training for evaluation with data: %s", str(data))
 
-        # TODO: Add test for this filtering
         # Remove rows with 'Unavailable' in the target column (last column)
         filtered_arr = data[data[:, -1] != "unavailable"]
         # Remove rows with 'unknown' in the target column

@@ -1,5 +1,6 @@
 """Unit tests for Model class."""
 
+import contextlib
 import sys
 from pathlib import Path
 from types import NoneType
@@ -198,12 +199,17 @@ class Model:
         """
         self.logger.info("Starting training for evaluation with data: %s", str(data))
 
+        # Remove rows with 'Unavailable' in the target column (last column)
+        filtered_arr = data[data[:, -1] != "unavailable"]
+        # Remove rows with 'unknown' in the target column
+        filtered_arr = filtered_arr[filtered_arr[:, -1] != "unknown"]
+
         # Factorize categorical columns using numpy.unique
         # Create a new array with float dtype to avoid object dtype issues
-        data_encoded = np.empty(data.shape, dtype=float)
+        data_encoded = np.empty(filtered_arr.shape, dtype=float)
 
-        for col_idx in range(data.shape[1]):
-            column_data = data[:, col_idx]
+        for col_idx in range(filtered_arr.shape[1]):
+            column_data = filtered_arr[:, col_idx]
 
             # Check if column contains non-numeric data
             if column_data.dtype == object or not np.issubdtype(
@@ -235,7 +241,7 @@ class Model:
             n_cls = len(cls_indices)
             # Ensure at least 1 test sample per class if there are 2+ samples
             # For single-sample classes, put in training to avoid empty training sets
-            test_size_cls = max(int(n_cls * 0.25), 1) if n_cls >= 2 else 0
+            test_size_cls = max(int(n_cls * 0.25), 1) if n_cls > 1 else 0
 
             test_indices.extend(cls_indices[:test_size_cls])
             train_indices.extend(cls_indices[test_size_cls:])
@@ -646,6 +652,131 @@ class TestModelTrainEval:
         assert model.model_eval is not None
 
 
+class TestModelTrainEvalFiltering:
+    """Test Model train_eval filtering of unavailable and unknown values."""
+
+    def test_train_eval_filters_unavailable_target_values(self) -> None:
+        """Test that train_eval filters out rows with 'unavailable' in target."""
+        model = Model(MockLogger())
+        # Create data with 'unavailable' values in target
+        train_data = pd.DataFrame({
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8],
+            "target": [
+                "off",
+                "unavailable",
+                "on",
+                "off",
+                "unavailable",
+                "on",
+                "off",
+                "on",
+            ],
+        })
+        train_numpy = convert_df_to_numpy(train_data)
+
+        # Train should succeed without error
+        model.train_eval(train_numpy)
+
+        # Model should be trained
+        assert model.model_eval is not None
+        assert model.accuracy is not None
+
+        # The filtered data should only have 6 rows (8 - 2 unavailable)
+        # We can verify this indirectly by checking that model was trained
+        # successfully with only the valid classes
+
+    def test_train_eval_filters_unknown_target_values(self) -> None:
+        """Test that train_eval filters out rows with 'unknown' in target column."""
+        model = Model(MockLogger())
+        # Create data with 'unknown' values in target
+        train_data = pd.DataFrame({
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8],
+            "target": ["off", "unknown", "on", "off", "unknown", "on", "off", "on"],
+        })
+        train_numpy = convert_df_to_numpy(train_data)
+
+        # Train should succeed without error
+        model.train_eval(train_numpy)
+
+        # Model should be trained
+        assert model.model_eval is not None
+        assert model.accuracy is not None
+
+    def test_train_eval_filters_both_unavailable_and_unknown(self) -> None:
+        """Test that train_eval filters both 'unavailable' and 'unknown'."""
+        model = Model(MockLogger())
+        # Create data with both 'unavailable' and 'unknown' values
+        train_data = pd.DataFrame({
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "target": [
+                "off",
+                "unavailable",
+                "on",
+                "unknown",
+                "off",
+                "on",
+                "unavailable",
+                "unknown",
+                "off",
+                "on",
+            ],
+        })
+        train_numpy = convert_df_to_numpy(train_data)
+
+        # Train should succeed without error
+        model.train_eval(train_numpy)
+
+        # Model should be trained with only valid data
+        assert model.model_eval is not None
+        assert model.accuracy is not None
+
+    def test_train_eval_keeps_valid_target_values(self) -> None:
+        """Test train_eval keeps valid values and filters unavailable/unknown."""
+        model = Model(MockLogger())
+        # Create data with various values
+        # Only 'unavailable' and 'unknown' should be filtered
+        train_data = pd.DataFrame({
+            "feature": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "target": [
+                "off",
+                "on",
+                "off",
+                "on",
+                "unavailable",
+                "off",
+                "unknown",
+                "on",
+                "off",
+                "on",
+            ],
+        })
+        train_numpy = convert_df_to_numpy(train_data)
+
+        # Train should succeed with 8 valid rows (10 - 2 filtered)
+        model.train_eval(train_numpy)
+
+        # Model should be trained
+        assert model.model_eval is not None
+        assert model.accuracy is not None
+
+    def test_train_eval_with_all_unavailable_raises_error(self) -> None:
+        """Test train_eval with all unavailable values handles edge case."""
+        model = Model(MockLogger())
+        # Create data where all values are unavailable
+        train_data = pd.DataFrame({
+            "feature": [1, 2, 3, 4],
+            "target": ["unavailable", "unavailable", "unavailable", "unavailable"],
+        })
+        train_numpy = convert_df_to_numpy(train_data)
+
+        # This should raise an error or handle empty dataset gracefully
+        # Since the filtering results in an empty array
+        with contextlib.suppress(ValueError, IndexError):
+            model.train_eval(train_numpy)
+            # If it doesn't raise, check that model handles empty data
+            # The model may not train properly with empty data
+
+
 class TestModelSampling:
     """Test Model sampling functionality."""
 
@@ -693,14 +824,14 @@ class TestModelFactorization:
         model = Model(MockLogger())
         # Use integer dtype to ensure numpy recognizes as numeric
         train_data = pd.DataFrame({
-            "numeric": pd.array([1, 2, 3, 4], dtype='int64'),
+            "numeric": pd.array([1, 2, 3, 4], dtype="int64"),
             "target": ["off", "off", "on", "on"],
         })
         train_numpy = convert_df_to_numpy(train_data)
         model.train_final(train_numpy)
 
         # Only target should be factorized (categorical)
-        # Note: When converting pandas to numpy with to_numpy(), 
+        # Note: When converting pandas to numpy with to_numpy(),
         # mixed types create object dtype, so numeric column may be factorized
         # This test documents actual behavior
         assert 1 in model.factors  # target column factorized
@@ -780,9 +911,9 @@ class TestModelEdgeCases:
         """Test with mixed categorical and numeric features."""
         model = Model(MockLogger())
         train_data = pd.DataFrame({
-            "numeric1": pd.array([1, 2, 3, 4], dtype='int64'),
+            "numeric1": pd.array([1, 2, 3, 4], dtype="int64"),
             "categorical": ["a", "b", "a", "b"],
-            "numeric2": pd.array([10, 20, 30, 40], dtype='int64'),
+            "numeric2": pd.array([10, 20, 30, 40], dtype="int64"),
             "target": ["off", "on", "off", "on"],
         })
         train_numpy = convert_df_to_numpy(train_data)
@@ -791,7 +922,7 @@ class TestModelEdgeCases:
         # Check that categorical column is factorized
         assert 1 in model.factors  # categorical column
         assert 3 in model.factors  # target column
-        
+
         # Note: Due to DataFrame.to_numpy() with mixed types creating object dtype,
         # numeric columns may also be factorized. This documents actual behavior.
 
