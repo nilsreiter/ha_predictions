@@ -15,20 +15,19 @@ class Model:
         """Initialize the Model class."""
         self.logger = logger
         self.accuracy: float | NoneType = None
-        self.factors: dict[str, Any] = {}
+        self.factors: dict[int, Any] = {}
         self.model_eval: LogisticRegression | None = None
         self.model_final: LogisticRegression | None = None
-        self.target_column: str | None = None
+        self.target_column_idx: int | None = None
         self.prediction_ready: bool = False
 
     def predict(
-        self, data: np.ndarray, col_names: list[str] | None = None
+        self, data: np.ndarray
     ) -> tuple[str, float] | NoneType:
         """Make predictions and return original values.
         
         Args:
             data: Numpy array of feature values (raw, not encoded)
-            col_names: List of column names corresponding to data columns
         
         Returns:
             Tuple of (predicted_label, probability) or None
@@ -39,32 +38,33 @@ class Model:
         # Apply factorization to features only using stored factors
         data_encoded = data.copy()
         
-        if col_names:
-            for col_idx, col_name in enumerate(col_names):
-                if col_name in self.factors and col_name != self.target_column:
-                    value = data[0, col_idx]
-                    categories = self.factors[col_name]
-                    
-                    # Find the index of the value in categories using numpy
-                    try:
-                        idx = np.where(categories == value)[0]
-                        if len(idx) > 0:
-                            data_encoded[0, col_idx] = idx[0]
-                        else:
-                            # Value not found in training data, use -1
-                            data_encoded[0, col_idx] = -1
-                    except (ValueError, TypeError):
+        for col_idx in range(data.shape[1]):
+            # Skip the target column (we don't have target in prediction data)
+            if col_idx in self.factors:
+                value = data[0, col_idx]
+                categories = self.factors[col_idx]
+                
+                # Find the index of the value in categories using numpy
+                try:
+                    idx = np.where(categories == value)[0]
+                    if len(idx) > 0:
+                        data_encoded[0, col_idx] = idx[0]
+                    else:
+                        # Value not found in training data, use -1
                         data_encoded[0, col_idx] = -1
+                except (ValueError, TypeError):
+                    data_encoded[0, col_idx] = -1
 
         # Predict
         predictions, probabilities = self.model_final.predict(data_encoded)
 
         if (
-            self.target_column in self.factors
+            self.target_column_idx is not None
+            and self.target_column_idx in self.factors
             and predictions is not None
             and probabilities is not None
         ):
-            target_categories = self.factors[self.target_column]
+            target_categories = self.factors[self.target_column_idx]
             label = target_categories[predictions[0]]
             # Sigmoid output represents P(class=1), adjust for class 0
             # If predicted class is 0, probability should be 1 - sigmoid_output
@@ -77,35 +77,29 @@ class Model:
     def train_final(
         self,
         data: np.ndarray,
-        col_names: list[str],
-        target_column: str | None = None,
     ) -> None:
         """Train the final model.
         
         Args:
-            data: Numpy array with features and target (not encoded)
-            col_names: List of column names corresponding to data columns
-            target_column: Name of the target column (optional, defaults to last column)
+            data: Numpy array with features and target (not encoded). 
+                  Last column is assumed to be the target column.
         """
-        # Determine target column
-        if target_column is None:
-            self.target_column = col_names[-1]
-        else:
-            self.target_column = target_column
+        # Target column is the last column
+        self.target_column_idx = data.shape[1] - 1
 
         # Factorize categorical columns using numpy.unique
         data_encoded = data.copy()
         self.factors = {}
         
-        for col_idx, col_name in enumerate(col_names):
+        for col_idx in range(data.shape[1]):
             column_data = data[:, col_idx]
             
             # Check if column contains non-numeric data
             if column_data.dtype == object or not np.issubdtype(column_data.dtype, np.number):
                 # Use numpy.unique to get unique values and their indices
                 unique_values, inverse_indices = np.unique(column_data, return_inverse=True)
-                # Store the unique values for later decoding
-                self.factors[col_name] = unique_values
+                # Store the unique values for later decoding (keyed by column index)
+                self.factors[col_idx] = unique_values
                 # Replace column with encoded indices
                 data_encoded[:, col_idx] = inverse_indices
 
@@ -123,19 +117,19 @@ class Model:
         self.logger.debug("Training ends, model: %s", str(self.model_final))
         self.prediction_ready = True
 
-    def train_eval(self, data: np.ndarray, col_names: list[str]) -> NoneType:
+    def train_eval(self, data: np.ndarray) -> NoneType:
         """Train and evaluate the model with train/test split.
         
         Args:
-            data: Numpy array with features and target (not encoded)
-            col_names: List of column names corresponding to data columns
+            data: Numpy array with features and target (not encoded).
+                  Last column is assumed to be the target column.
         """
         self.logger.info("Starting training for evaluation with data: %s", str(data))
 
         # Factorize categorical columns using numpy.unique
         data_encoded = data.copy()
         
-        for col_idx, col_name in enumerate(col_names):
+        for col_idx in range(data.shape[1]):
             column_data = data[:, col_idx]
             
             # Check if column contains non-numeric data

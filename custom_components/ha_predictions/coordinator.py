@@ -155,11 +155,10 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         )
         self.logger.debug("Instance data for prediction: %s", str(instance_data))
         
-        # Convert to numpy array and get column names
+        # Convert to numpy array
         instance_array = instance_data.to_numpy()
-        col_names = instance_data.columns.tolist()
         
-        return self.model.predict(instance_array, col_names)
+        return self.model.predict(instance_array)
 
     def _initialize_dataframe(self) -> NoneType:
         """Initialize empty dataframe for dataset."""
@@ -239,21 +238,18 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             )
             return
 
-        # Convert DataFrame to numpy array and get column names
+        # Convert DataFrame to numpy array
         data_numpy = self.dataset.copy().to_numpy()
-        col_names = self.dataset.columns.tolist()
 
         if self.operation_mode == OP_MODE_TRAIN:
             await self.hass.async_add_executor_job(
-                self.model.train_eval, data_numpy, col_names
+                self.model.train_eval, data_numpy
             )
             self.accuracy = self.model.accuracy
             self.logger.info("Training complete, accuracy: %f", self.accuracy)
         elif self.operation_mode == OP_MODE_PROD:
-            # Get target column name
-            target_column = col_names[-1]
             await self.hass.async_add_executor_job(
-                self.model.train_final, data_numpy, col_names, target_column
+                self.model.train_final, data_numpy
             )
         else:
             self.logger.error("Unknown operation mode: %s", self.operation_mode)
