@@ -1,5 +1,6 @@
 """Constants for integration_blueprint."""
 
+from enum import Enum
 from logging import Logger, getLogger
 
 LOGGER: Logger = getLogger(__package__)
@@ -19,9 +20,6 @@ MSG_OPERATION_MODE_CHANGED = "OPERATION_MODE_CHANGED"
 MSG_PREDICTION_MADE = "PREDICTION_MADE"
 MSG_TRAINING_SETTINGS_CHANGED = "TRAINING_SETTINGS_CHANGED"
 
-OP_MODE_TRAIN = "TRAINING"
-OP_MODE_PROD = "PRODUCTION"
-
 MIN_DATASET_SIZE = 10
 
 ENTITY_KEY_PERFORMANCE = "performance"
@@ -36,3 +34,10 @@ ENTITY_KEY_SAMPLING_STRATEGY = "sampling_strategy"
 SAMPLING_NONE = "None"
 SAMPLING_RANDOM = "Random oversampling"
 SAMPLING_SMOTE = "SMOTE"
+
+
+class OperationMode(Enum):
+    """Enumeration for operation modes."""
+
+    TRAINING = "TRAINING"
+    PRODUCTION = "PRODUCTION"

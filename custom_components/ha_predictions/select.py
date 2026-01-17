@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from warnings import deprecated
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from propcache import cached_property
@@ -12,12 +13,11 @@ from custom_components.ha_predictions.switch import EntityCategory
 from .const import (
     ENTITY_KEY_OPERATION_MODE,
     ENTITY_KEY_SAMPLING_STRATEGY,
-    OP_MODE_PROD,
-    OP_MODE_TRAIN,
     SAMPLING_NONE,
     SAMPLING_RANDOM,
     SAMPLING_SMOTE,
     UNDERSCORE,
+    OperationMode,
 )
 from .entity import HAPredictionEntity
 
@@ -37,14 +37,6 @@ async def async_setup_entry(
     """Set up the select platform."""
     async_add_entities(
         [
-            # SelectModeEntity(
-            #     coordinator=entry.runtime_data.coordinator,
-            #     entity_description=HAPredictionSelectEntityDescription(
-            #         key=ENTITY_KEY_OPERATION_MODE,
-            #         name="Mode",
-            #         icon="mdi:form-dropdown",
-            #     ),
-            # ),
             HAPredictionSelectEntity(
                 coordinator=entry.runtime_data.coordinator,
                 entity_description=HAPredictionSelectEntityDescription(
@@ -61,7 +53,10 @@ async def async_setup_entry(
                     key=ENTITY_KEY_OPERATION_MODE,
                     name="Operation Mode",
                     icon="mdi:form-dropdown",
-                    options=[OP_MODE_TRAIN, OP_MODE_PROD],
+                    options=[
+                        OperationMode.TRAINING.name,
+                        OperationMode.PRODUCTION.name,
+                    ],
                 ),
             ),
         ]
@@ -120,6 +115,7 @@ class HAPredictionSelectEntity(HAPredictionEntity, SelectEntity):
         return self.options[0]
 
 
+@deprecated("SelectModeEntity is deprecated, use HAPredictionSelectEntity instead.")
 class SelectModeEntity(HAPredictionSelectEntity):
     """Select entity to choose operation mode."""
 
@@ -130,7 +126,10 @@ class SelectModeEntity(HAPredictionSelectEntity):
     ) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator, entity_description)
-        self._attr_options: list[str] = [OP_MODE_TRAIN, OP_MODE_PROD]
+        self._attr_options: list[str] = [
+            OperationMode.TRAINING.name,
+            OperationMode.PRODUCTION.name,
+        ]
 
     @cached_property
     def unique_id(self) -> str | None:
@@ -144,7 +143,7 @@ class SelectModeEntity(HAPredictionSelectEntity):
     @property
     def current_option(self) -> str:
         """Return the current option."""
-        return self.coordinator.operation_mode
+        return self.coordinator.operation_mode.name
 
     @property
     def available(self) -> bool:
