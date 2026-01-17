@@ -54,6 +54,7 @@ The integration creates these entities:
 1. **Training Phase**: Set mode to TRAINING and let your home operate normally for days/weeks. Data is automatically collected. Monitor Dataset Size sensor.
 2. **Train Model**: Once you have 10+ samples, click **Run Training**. Check Prediction Performance sensor for accuracy.
 3. **Production**: Set mode to PRODUCTION to make real-time predictions based on trained model.
+4. **Automation**: Create a Home Assistant automation that triggers when the prediction changes to control your target entity (e.g., switch lights). This is a security measure to ensure predictions don't directly control devices.
 
 ## Example Use Cases
 
