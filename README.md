@@ -45,9 +45,9 @@ You can modify feature entities later via **Configure**, but this will reset you
 
 The integration creates these entities:
 
-**Sensors**: Prediction Performance (accuracy %), Dataset Size (sample count), Current Prediction (state + confidence)  
-**Buttons**: Store Instance (manual save), Run Training (requires 10+ samples)  
-**Mode Selector**: TRAINING (collect data) / PRODUCTION (make predictions)
+- **Sensors**: Prediction Performance (accuracy %), Dataset Size (sample count), Current Prediction (state + confidence)
+- **Buttons**: Store Instance (manual save), Run Training (requires 10+ samples)
+- **Mode Selector**: TRAINING (collect data) / PRODUCTION (make predictions)
 
 ## Workflow
 
