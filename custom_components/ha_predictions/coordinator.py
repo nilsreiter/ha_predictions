@@ -4,9 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import pandas as pd
+from homeassistant.components.sql.util import async_create_sessionmaker
+from homeassistant.helpers.recorder import get_instance
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from sqlalchemy.orm import Session, scoped_session, sessionmaker
 
 from .const import (
     CONF_FEATURE_ENTITY,
@@ -24,7 +28,6 @@ if TYPE_CHECKING:
     from types import NoneType
 
     from homeassistant.core import Event, EventStateChangedData
-
     from .data import HAPredictionConfigEntry
     from .entity import HAPredictionEntity
 
@@ -247,3 +250,13 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             self.logger.error("Unknown operation mode: %s", self.operation_mode)
             return
         [e.notify(MSG_TRAINING_DONE) for e in self.entity_registry]
+
+    async def _extract_initial_dataset_from_recorder(self) -> NoneType:
+        """Extract initial dataset from recorder history."""
+        dburl = get_instance(self.hass).db_url
+        self.logger.info("Extracting initial dataset from recorder database: %s", dburl)
+
+        sess = await async_create_sessionmaker(self.hass, dburl)
+
+        # _lambda_stmt = generate_lambda_stmt(rendered_query)
+        # result: Result = sess[0].execute(_lambda_stmt)
