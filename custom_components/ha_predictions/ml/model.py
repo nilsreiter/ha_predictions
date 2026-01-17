@@ -259,8 +259,8 @@ class Model:
         means = np.mean(data, axis=0)
         stds = np.std(data, axis=0, ddof=0)
 
-        # Avoid division by zero
-        stds[stds == 0] = 1e-10
+        # Avoid division by zero by leaving zero-variance features unscaled
+        stds[stds == 0] = 1.0
 
         data = (data - means) / stds
         return (means, stds, data)
