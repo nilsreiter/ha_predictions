@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
+import numpy as np
 import pandas as pd
 from homeassistant.components.sql.util import async_create_sessionmaker
 from homeassistant.helpers.recorder import get_instance
@@ -15,14 +16,20 @@ from sqlalchemy.orm import Session, scoped_session, sessionmaker
 from .const import (
     CONF_FEATURE_ENTITY,
     CONF_TARGET_ENTITY,
+    ENTITY_KEY_OPERATION_MODE,
+    ENTITY_KEY_SAMPLING_STRATEGY,
     MIN_DATASET_SIZE,
     MSG_DATASET_CHANGED,
     MSG_PREDICTION_MADE,
     MSG_TRAINING_DONE,
-    OP_MODE_PROD,
-    OP_MODE_TRAIN,
+    MSG_TRAINING_SETTINGS_CHANGED,
+    SAMPLING_NONE,
+    SAMPLING_RANDOM,
+    SAMPLING_SMOTE,
+    OperationMode,
 )
-from .ml.model import Model
+from .ml.exceptions import ModelNotTrainedError
+from .ml.model import Model, SamplingStrategy
 
 if TYPE_CHECKING:
     from types import NoneType
@@ -43,11 +50,10 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         # Initialize instance variables to avoid sharing between coordinator instances
         self.accuracy: float | NoneType = None
         self.entity_registry: list[HAPredictionEntity] = []
-        # TODO: Use only numpy array as dataset representation
         self.dataset: pd.DataFrame | NoneType = None
         self.dataset_size: int = 0
         self.model: Model = Model(self.logger)
-        self.operation_mode: str = OP_MODE_TRAIN
+        self.operation_mode: OperationMode = OperationMode.TRAINING
         self.training_ready: bool = False
         self.current_prediction: tuple[str, float] | NoneType = None
 
@@ -62,11 +68,69 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         """Remove all listeners."""
         self.entity_registry.clear()
 
-    def set_operation_mode(self, mode: str) -> None:
+    def set_zscores(self, *, value: bool) -> NoneType:
+        """En- or disable the use of zscores for training."""
+        if value and "zscores" not in self.model.transformations:
+            self.model.transformations["zscores"] = {}
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Z-Score normalization enabled.")
+        elif not value and "zscores" in self.model.transformations:
+            self.model.transformations.pop("zscores", None)
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Z-Score normalization disabled.")
+
+    def get_option(self, key: str) -> str | NoneType:
+        """Get the current option for a given key."""
+        if key == ENTITY_KEY_OPERATION_MODE:
+            return self.operation_mode.name
+        if key == ENTITY_KEY_SAMPLING_STRATEGY:
+            if "sampling" not in self.model.transformations:
+                return SAMPLING_NONE
+            sampling_type = self.model.transformations["sampling"]["type"]
+            if sampling_type == SamplingStrategy.RANDOM_OVER:
+                return SAMPLING_RANDOM
+            if sampling_type == SamplingStrategy.SMOTE:
+                return SAMPLING_SMOTE
+            self.logger.warning(
+                "Unknown sampling strategy '%s', defaulting to '%s'",
+                sampling_type,
+                SAMPLING_NONE,
+            )
+            return SAMPLING_NONE
+        return None
+
+    def select_option(self, key: str, value: str) -> NoneType:
+        """Change the selected option."""
+        if key == ENTITY_KEY_OPERATION_MODE:
+            self._set_operation_mode(OperationMode[value])
+        elif key == ENTITY_KEY_SAMPLING_STRATEGY:
+            self._set_sampling_strategy(value)
+
+    def _set_operation_mode(self, mode: OperationMode) -> None:
         """Set the operation mode."""
         if mode != self.operation_mode:
             self.operation_mode = mode
             self.logger.info("Operation mode has been changed to %s", mode)
+
+    def _set_sampling_strategy(self, strategy: str) -> NoneType:
+        """Set the sampling strategy for handling imbalanced datasets."""
+        if strategy == SAMPLING_RANDOM:
+            self.model.transformations["sampling"] = {
+                "type": SamplingStrategy.RANDOM_OVER
+            }
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Random oversampling enabled.")
+        elif strategy == SAMPLING_SMOTE:
+            self.model.transformations["sampling"] = {
+                "type": SamplingStrategy.SMOTE,
+                "k_neighbors": 5,
+            }
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("SMOTE enabled.")
+        else:
+            self.model.transformations.pop("sampling", None)
+            [e.notify(MSG_TRAINING_SETTINGS_CHANGED) for e in self.entity_registry]
+            self.logger.info("Sampling disabled.")
 
     def state_changed(self, event: Event[EventStateChangedData]) -> None:
         """Handle state changes of monitored entities."""
@@ -118,9 +182,20 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         Runs in executor to avoid blocking event loop.
         """
         xy = self._get_states_for_entities()
+        if xy is None:
+            self.logger.info(
+                "Target entity not available or not known, skipping data collection."
+            )
+            return
         if self.dataset is None:
             self._initialize_dataframe()
-        if self.dataset is not None:
+        if self.dataset is not None and xy[-1] not in [
+            "unavailable",
+            "unknown",
+            "Unavailable",
+            "Unknown",
+            None,
+        ]:
             self.dataset.loc[len(self.dataset)] = xy
             self.dataset_size = self.dataset.shape[0]
             self.logger.info(self.dataset)
@@ -148,15 +223,15 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
 
         Runs in executor to avoid blocking event loop.
         """
-        if self.dataset is None:
+        try:
+            return self.model.predict(
+                np.array(self._get_states_for_entities(include_target=False)).reshape(
+                    1, -1
+                )
+            )
+        except ModelNotTrainedError as e:
+            self.logger.warning(e)
             return None
-
-        instance_data = pd.DataFrame(
-            columns=self.dataset.columns[:-1],
-            data=[self._get_states_for_entities(include_target=False)],
-        )
-        self.logger.debug("Instance data for prediction: %s", str(instance_data))
-        return self.model.predict(instance_data)
 
     def _initialize_dataframe(self) -> NoneType:
         """Initialize empty dataframe for dataset."""
@@ -180,22 +255,27 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
 
     def _get_states_for_entities(
         self, *, include_target: bool | NoneType = True
-    ) -> list[str | float | NoneType]:
+    ) -> list[str | float | NoneType] | NoneType:
         """Get the states for all monitored entities."""
         features = [
             self._get_state_for_entity(e)
             for e in self.config_entry.data[CONF_FEATURE_ENTITY]
         ]
         if include_target:
-            return [
-                *features,
-                self._get_state_for_entity(
-                    entity_id=self.config_entry.data[CONF_TARGET_ENTITY]
-                ),
-            ]
+            target_entity_state = self._get_state_for_entity(
+                entity_id=self.config_entry.data[CONF_TARGET_ENTITY]
+            )
+            if target_entity_state not in [
+                "unavailable",
+                "unknown",
+                None,
+                "Unavailable",
+                "Unknown",
+            ]:
+                return [*features, target_entity_state]
+            return None
         return features
 
-    # TODO: Check that this doesn't block the event loop
     def read_table(self) -> NoneType:
         """Read dataset from file."""
         self.logger.info(
@@ -203,21 +283,36 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             str(self.config_entry.runtime_data.datafile),
         )
         if Path.exists(self.config_entry.runtime_data.datafile):
-            self.dataset = pd.read_csv(
-                self.config_entry.runtime_data.datafile, header=0
-            )
-            self.dataset_size = self.dataset.shape[0]
-            [e.notify(MSG_DATASET_CHANGED) for e in self.entity_registry]
+            try:
+                self.dataset = pd.read_csv(
+                    self.config_entry.runtime_data.datafile, header=0
+                )
+                self.dataset_size = self.dataset.shape[0]
+                [e.notify(MSG_DATASET_CHANGED) for e in self.entity_registry]
+            except (OSError, PermissionError):
+                self.logger.exception(
+                    "Failed to read dataset from file %s",
+                    str(self.config_entry.runtime_data.datafile),
+                )
+            except pd.errors.ParserError:
+                self.logger.exception(
+                    "Failed to parse CSV file %s",
+                    str(self.config_entry.runtime_data.datafile),
+                )
 
-    # TODO: handle possible IO errors
-    # TODO: storing on disk should happend regularly in the background
     def store_table(self, df: pd.DataFrame | NoneType) -> None:
         """Store dataset to file."""
-        self.config_entry.runtime_data.datafile.parent.mkdir(
-            parents=True, exist_ok=True
-        )
-        if df is not None:
-            df.to_csv(self.config_entry.runtime_data.datafile, index=False)
+        try:
+            self.config_entry.runtime_data.datafile.parent.mkdir(
+                parents=True, exist_ok=True
+            )
+            if df is not None:
+                df.to_csv(self.config_entry.runtime_data.datafile, index=False)
+        except (OSError, PermissionError):
+            self.logger.exception(
+                "Failed to store dataset to file %s",
+                str(self.config_entry.runtime_data.datafile),
+            )
 
     async def train(self) -> NoneType:
         """Run the training process."""
@@ -236,20 +331,22 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             )
             return
 
-        if self.operation_mode == OP_MODE_TRAIN:
-            await self.hass.async_add_executor_job(
-                self.model.train_eval, self.dataset.copy()
-            )
+        # Convert DataFrame to numpy array
+        data_numpy = self.dataset.copy().to_numpy()
+
+        if self.operation_mode == OperationMode.TRAINING:
+            await self.hass.async_add_executor_job(self.model.train_eval, data_numpy)
             self.accuracy = self.model.accuracy
             self.logger.info("Training complete, accuracy: %f", self.accuracy)
-        elif self.operation_mode == OP_MODE_PROD:
-            await self.hass.async_add_executor_job(
-                self.model.train_final, self.dataset.copy()
-            )
+        elif self.operation_mode == OperationMode.PRODUCTION:
+            await self.hass.async_add_executor_job(self.model.train_final, data_numpy)
         else:
             self.logger.error("Unknown operation mode: %s", self.operation_mode)
             return
         [e.notify(MSG_TRAINING_DONE) for e in self.entity_registry]
+        if self.operation_mode == OperationMode.PRODUCTION:
+            # Update prediction after training
+            await self._async_make_prediction()
 
     async def _extract_initial_dataset_from_recorder(self) -> NoneType:
         """Extract initial dataset from recorder history."""
