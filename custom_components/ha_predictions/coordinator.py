@@ -269,8 +269,9 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
             self.dataset_size = self.dataset.shape[0]
             [e.notify(MSG_DATASET_CHANGED) for e in self.entity_registry]
 
-    # TODO: handle possible IO errors
-    # TODO: storing on disk should happend regularly in the background
+    # TODO: handle possible IO errors  # noqa: FIX002, TD002, TD003
+    # TODO: storing on disk should happend in background # noqa: FIX002, TD002, TD003
+
     def store_table(self, df: pd.DataFrame | NoneType) -> None:
         """Store dataset to file."""
         self.config_entry.runtime_data.datafile.parent.mkdir(
