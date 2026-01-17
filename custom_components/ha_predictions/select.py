@@ -6,9 +6,8 @@ from typing import TYPE_CHECKING
 from warnings import deprecated
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.const import EntityCategory
 from propcache import cached_property
-
-from custom_components.ha_predictions.switch import EntityCategory
 
 from .const import (
     ENTITY_KEY_OPERATION_MODE,
@@ -113,44 +112,3 @@ class HAPredictionSelectEntity(HAPredictionEntity, SelectEntity):
             self.entity_description.key,
         )
         return self.options[0]
-
-
-@deprecated("SelectModeEntity is deprecated, use HAPredictionSelectEntity instead.")
-class SelectModeEntity(HAPredictionSelectEntity):
-    """Select entity to choose operation mode."""
-
-    def __init__(
-        self,
-        coordinator: HAPredictionUpdateCoordinator,
-        entity_description: HAPredictionSelectEntityDescription,
-    ) -> None:
-        """Initialize the select entity."""
-        super().__init__(coordinator, entity_description)
-        self._attr_options: list[str] = [
-            OperationMode.TRAINING.name,
-            OperationMode.PRODUCTION.name,
-        ]
-
-    @cached_property
-    def unique_id(self) -> str | None:
-        """Return a unique ID."""
-        return (
-            self.coordinator.config_entry.entry_id
-            + UNDERSCORE
-            + ENTITY_KEY_OPERATION_MODE
-        )
-
-    @property
-    def current_option(self) -> str:
-        """Return the current option."""
-        return self.coordinator.operation_mode.name
-
-    @property
-    def available(self) -> bool:
-        """Return if entity is available."""
-        return True
-
-    async def async_select_option(self, option: str) -> None:
-        """Change the selected option."""
-        self.coordinator.select_option(self.entity_description.key, option)
-        self.schedule_update_ha_state()
