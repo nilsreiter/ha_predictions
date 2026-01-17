@@ -1,5 +1,6 @@
 """Unit tests for Model class."""
 
+import contextlib
 import sys
 from pathlib import Path
 from types import NoneType
@@ -240,7 +241,7 @@ class Model:
             n_cls = len(cls_indices)
             # Ensure at least 1 test sample per class if there are 2+ samples
             # For single-sample classes, put in training to avoid empty training sets
-            test_size_cls = max(int(n_cls * 0.25), 1) if n_cls >= 2 else 0
+            test_size_cls = max(int(n_cls * 0.25), 1) if n_cls > 1 else 0
 
             test_indices.extend(cls_indices[:test_size_cls])
             train_indices.extend(cls_indices[test_size_cls:])
@@ -760,8 +761,6 @@ class TestModelTrainEvalFiltering:
 
     def test_train_eval_with_all_unavailable_raises_error(self) -> None:
         """Test train_eval with all unavailable values handles edge case."""
-        import contextlib
-
         model = Model(MockLogger())
         # Create data where all values are unavailable
         train_data = pd.DataFrame({
