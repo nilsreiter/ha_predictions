@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from .entity import HAPredictionEntity
 
 
+# todo: add tests for coordinator
 class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
     """Class to manage training/testing the model."""
 
