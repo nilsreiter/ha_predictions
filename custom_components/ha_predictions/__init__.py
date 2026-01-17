@@ -74,16 +74,21 @@ async def async_setup_entry(
     target_entity_state = hass.states.get(entry.data[CONF_TARGET_ENTITY])
     if target_entity_state is not None:
         suggested_area = target_entity_state.attributes.get("area_id")
+        target_entity_name = target_entity_state.attributes.get(
+            "friendly_name", entry.data[CONF_TARGET_ENTITY]
+        )
     else:
         suggested_area = None
+        target_entity_name = entry.data[CONF_TARGET_ENTITY]
     entry.runtime_data = HAPredictionData(
         integration=async_get_loaded_integration(hass, entry.domain),
         coordinator=coordinator,
         datafile=Path(hass.config.config_dir, DOMAIN, entry.entry_id + ".csv"),
         unsubscribe=[unsub],
+        target_entity_name=target_entity_name,
         device_info=DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=f"HA Predictions {entry.title}",
+            name=f"HA Predictions for {target_entity_name}",
             manufacturer="Nils Reiter",
             model="HA Predictions Integration",
             suggested_area=suggested_area,

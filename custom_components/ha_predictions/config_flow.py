@@ -2,15 +2,24 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.core import callback
+from homeassistant.core import State, callback
 from homeassistant.helpers import selector
 from slugify import slugify
 
-from .const import CONF_FEATURE_ENTITY, CONF_TARGET_ENTITY, DOMAIN, OPT_FEATURES_CHANGED
+from .const import (
+    CONF_FEATURE_ENTITY,
+    CONF_TARGET_ENTITY,
+    DOMAIN,
+    LOGGER,
+    OPT_FEATURES_CHANGED,
+)
+
+if TYPE_CHECKING:
+    from types import NoneType
 
 
 class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -34,17 +43,14 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         _errors = {}
         if user_input is not None:
             await self.async_set_unique_id(
-                ## TODO: Find an alternative way to set unique_id
-                ## Do NOT use this in production code
-                ## The unique_id should never be something that can change
-                ## https://developers.home-assistant.io/docs/config_entries_config_flow_handler#unique-ids
                 unique_id=slugify(user_input[CONF_TARGET_ENTITY])
             )
+            LOGGER.debug("Set unique ID to %s", self.unique_id)
             self._abort_if_unique_id_configured()
 
             # Validate entities exist and are of correct type
-            target_entity = user_input[CONF_TARGET_ENTITY]
-            feature_entities = user_input[CONF_FEATURE_ENTITY]
+            target_entity: str = user_input[CONF_TARGET_ENTITY]
+            feature_entities: list[str] = user_input[CONF_FEATURE_ENTITY]
 
             # Check if target entity exists
             if self.hass.states.get(target_entity) is None:
@@ -63,10 +69,18 @@ class HAPredictionsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         _errors["base"] = "feature_entity_not_found"
                         break
 
+            target_entity_state: State | NoneType = self.hass.states.get(target_entity)
+            if target_entity_state is not None:
+                target_entity_name = target_entity_state.attributes.get(
+                    "friendly_name", target_entity
+                )
+            else:
+                target_entity_name = target_entity
+
             # If no errors, create the entry
             if not _errors:
                 return self.async_create_entry(
-                    title="Prediction for " + user_input[CONF_TARGET_ENTITY],
+                    title="Prediction for " + target_entity_name,
                     data=user_input,
                 )
 
