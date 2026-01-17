@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from propcache import cached_property
 
-from .const import OP_MODE_PROD, OP_MODE_TRAIN
+from .const import ENTITY_SUFFIX_OPERATION_MODE, OP_MODE_PROD, OP_MODE_TRAIN
 from .entity import HAPredictionEntity
 
 if TYPE_CHECKING:
@@ -56,7 +56,7 @@ class SelectModeEntity(HAPredictionEntity, SelectEntity):
     @cached_property
     def unique_id(self) -> str | None:
         """Return a unique ID."""
-        return self.coordinator.config_entry.entry_id + "-select-operation-mode"
+        return self.coordinator.config_entry.entry_id + ENTITY_SUFFIX_OPERATION_MODE
 
     @property
     def current_option(self) -> str:

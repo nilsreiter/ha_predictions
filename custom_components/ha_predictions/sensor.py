@@ -8,6 +8,9 @@ from homeassistant.components.sensor import SensorEntity, SensorEntityDescriptio
 
 from .const import (
     CONF_FEATURE_ENTITY,
+    ENTITY_SUFFIX_CURRENT_PREDICTION,
+    ENTITY_SUFFIX_DATASET_SIZE,
+    ENTITY_SUFFIX_PERFORMANCE,
     MIN_DATASET_SIZE,
     MSG_DATASET_CHANGED,
     MSG_PREDICTION_MADE,
@@ -75,7 +78,9 @@ class DatasetSensor(HAPredictionEntity, SensorEntity):
         """Initialize the dataset size sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = self.coordinator.config_entry.entry_id + "-dataset-size"
+        self._attr_unique_id = (
+            self.coordinator.config_entry.entry_id + ENTITY_SUFFIX_DATASET_SIZE
+        )
         coordinator.register(self)
 
     @property
@@ -121,7 +126,7 @@ class CurrentPredictionSensor(HAPredictionEntity, SensorEntity):
         super().__init__(coordinator)
         self.entity_description = entity_description
         self._attr_unique_id = (
-            self.coordinator.config_entry.entry_id + "-current-prediction"
+            self.coordinator.config_entry.entry_id + ENTITY_SUFFIX_CURRENT_PREDICTION
         )
         coordinator.register(self)
 
@@ -170,7 +175,9 @@ class PredictionPerformanceSensor(HAPredictionEntity, SensorEntity):
         """Initialize the prediction performance sensor."""
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = self.coordinator.config_entry.entry_id + "-accuracy"
+        self._attr_unique_id = (
+            self.coordinator.config_entry.entry_id + ENTITY_SUFFIX_PERFORMANCE
+        )
         coordinator.register(self)
 
     @property

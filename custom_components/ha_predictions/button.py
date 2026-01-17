@@ -6,8 +6,13 @@ from typing import TYPE_CHECKING
 
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from propcache.api import cached_property
+from slugify import slugify
 
-from custom_components.ha_predictions.const import MSG_DATASET_CHANGED
+from custom_components.ha_predictions.const import (
+    ENTITY_SUFFIX_RUN_TRAINING,
+    ENTITY_SUFFIX_STORE_INSTANCE,
+    MSG_DATASET_CHANGED,
+)
 
 from .entity import HAPredictionEntity
 
@@ -58,15 +63,14 @@ class StoreInstanceButton(HAPredictionEntity, ButtonEntity):
         """Initialize the button entity."""
         super().__init__(coordinator)
         self.entity_description = entity_description
+        self._attr_unique_id = slugify(
+            self.coordinator.config_entry.runtime_data.target_entity_name
+            + ENTITY_SUFFIX_STORE_INSTANCE
+        )
 
     async def async_press(self) -> None:
         """Handle the button press."""
         await self.coordinator.async_collect()
-
-    @cached_property
-    def unique_id(self) -> str | None:
-        """Return a unique ID."""
-        return self.coordinator.config_entry.entry_id + "-store-instance"
 
 
 class RunTrainingButton(HAPredictionEntity, ButtonEntity):
@@ -82,14 +86,14 @@ class RunTrainingButton(HAPredictionEntity, ButtonEntity):
         self.entity_description = entity_description
         coordinator.register(self)
 
+        self._attr_unique_id = slugify(
+            self.coordinator.config_entry.runtime_data.target_entity_name
+            + ENTITY_SUFFIX_RUN_TRAINING
+        )
+
     async def async_press(self) -> None:
         """Handle the button press."""
         await self.coordinator.train()
-
-    @cached_property
-    def unique_id(self) -> str | None:
-        """Return a unique ID."""
-        return self.coordinator.config_entry.entry_id + "-run-training"
 
     @property
     def available(self) -> bool:
