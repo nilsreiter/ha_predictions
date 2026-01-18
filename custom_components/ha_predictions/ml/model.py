@@ -6,9 +6,8 @@ from typing import Any
 
 import numpy as np
 
-from custom_components.ha_predictions.ml import accuracy
-
 from .const import SamplingStrategy
+from .evaluation import accuracy, precision_recall_fscore
 from .exceptions import ModelNotTrainedError
 from .logistic_regression import LogisticRegression
 from .sampling import random_oversample, smote
@@ -257,6 +256,7 @@ class Model:
         y_pred = self.model_eval.predict(x_test)[0]
         if y_pred is not None:
             self.accuracy = accuracy(y_pred, y_test)
+            self.prf = precision_recall_fscore(y_pred, y_test)
 
     def _apply_filtering(
         self,
