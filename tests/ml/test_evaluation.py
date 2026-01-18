@@ -81,7 +81,7 @@ class TestPrecisionRecallFscore:
         assert np.isclose(scores[1][F_SCORE], 0.5)  # F1 score
 
     def test_bad_predictions(self) -> None:
-        """Test PRF with imperfect predictions."""
+        """Test PRF with all predictions being class 0."""
         y_gold = np.array([0, 0, 1, 1])
         y_pred = np.array([0, 0, 0, 0])
 
