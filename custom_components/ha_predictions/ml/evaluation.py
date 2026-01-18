@@ -38,7 +38,7 @@ def accuracy(y_pred: np.ndarray, y_gold: np.ndarray) -> float:
 def precision_recall_fscore(
     y_pred: np.ndarray,
     y_gold: np.ndarray,
-    class_labels: list[str] | None = None,
+    class_labels: np.ndarray | None = None,
     beta: float = 1.0,
 ) -> dict[Any, dict[str, float]]:
     """
@@ -64,10 +64,10 @@ def precision_recall_fscore(
             Default is 1.0, higher values represent more emphasis on recall.
 
     Returns:
-        dict: Precision, recall and F-score per class and macro average.
-        The outer dictionary keys are the class labels (including the
-        ``MACRO_AVERAGE`` key), and the inner dictionary keys are
-        ``'precision'``, ``'recall'`` and ``'f_score'``.
+        dict: Nested dictionary of scores per class and macro average. The outer
+        dict keys are the class labels (or ``MACRO_AVERAGE``), and the inner dict
+        keys are ``'precision'``, ``'recall'``, and ``'f_score'``.
+
 
     """
     classes = [0, 1]
