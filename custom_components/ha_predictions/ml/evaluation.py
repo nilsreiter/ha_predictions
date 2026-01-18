@@ -44,17 +44,30 @@ def precision_recall_fscore(
     """
     Calculate precision, recall and f-score of the model.
 
+    Calculate precision, recall and F-score of the model.
+
+    This function currently assumes **binary classification** with class labels
+    ``0`` and ``1``. Both ``y_pred`` and ``y_gold`` are expected to contain only
+    these two classes. If ``class_labels`` is provided, it must be indexable by
+    these integer class IDs (i.e. it must have at least two elements where
+    index ``0`` and ``1`` correspond to the negative and positive class labels,
+    respectively).
+
     Arguments:
         y_pred (np.ndarray): Predicted labels.
         y_gold (np.ndarray): True labels.
-        class_labels (list[str] | None): Optional list of class labels for
-            mapping class indices to string labels.
+        class_labels (list[str] | None): Optional list of human-readable class
+            labels corresponding to the integer class IDs used in ``y_pred`` and
+            ``y_gold`` (currently assumed to be ``0`` and ``1``). If provided,
+            these labels will be used as keys in the returned dictionaries.
         beta (float): Beta value for F-score calculation.
             Default is 1.0, higher values represent more emphasis on recall.
 
     Returns:
-        dict: Precision scores per class and macro average. Outer dict keys are
-        'precision', 'recall', 'f_score'.
+        dict: Precision, recall and F-score per class and macro average.
+        The outer dictionary keys are the class labels (including the
+        ``MACRO_AVERAGE`` key), and the inner dictionary keys are
+        ``'precision'``, ``'recall'`` and ``'f_score'``.
 
     """
     classes = [0, 1]
