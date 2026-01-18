@@ -8,7 +8,6 @@ import numpy as np
 # TODO: Add multi-class support  # noqa: FIX002, TD002, TD003
 # TODO: Add regularization # noqa: FIX002, TD002, TD003
 # TODO: Add better convergence checks # noqa: FIX002, TD002, TD003
-# TODO: Deal with missing data (gracefully handle NaNs) # noqa: FIX002, TD002, TD003
 class LogisticRegression:
     """Logistic Regression Classifier."""
 
