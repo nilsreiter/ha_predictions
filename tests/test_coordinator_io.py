@@ -16,7 +16,7 @@ from test_fixtures import MockLogger  # noqa: E402
 class TestCoordinatorIOErrorHandling:
     """Test suite for file IO error handling logic."""
 
-    def test_store_table_handles_permission_error(self, tmp_path) -> None:
+    def test_store_table_handles_permission_error(self, tmp_path: Path) -> None:
         """Test that PermissionError is caught when storing table."""
         datafile = tmp_path / "readonly_dir" / "test.csv"
         logger = MockLogger()
@@ -46,7 +46,7 @@ class TestCoordinatorIOErrorHandling:
             # Cleanup: restore write permissions
             datafile.parent.chmod(0o755)
 
-    def test_store_table_handles_oserror(self, tmp_path) -> None:
+    def test_store_table_handles_oserror(self, tmp_path: Path) -> None:
         """Test that OSError is caught when storing table."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -69,7 +69,7 @@ class TestCoordinatorIOErrorHandling:
             assert len(logger.exception_calls) == 1
             assert "Failed to store dataset to file" in logger.exception_calls[0][0]
 
-    def test_store_table_with_none_dataframe(self, tmp_path) -> None:
+    def test_store_table_with_none_dataframe(self, tmp_path: Path) -> None:
         """Test that None dataframe doesn't cause errors."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -89,7 +89,7 @@ class TestCoordinatorIOErrorHandling:
         # Verify no error was logged
         assert len(logger.exception_calls) == 0
 
-    def test_read_table_handles_permission_error(self, tmp_path) -> None:
+    def test_read_table_handles_permission_error(self, tmp_path: Path) -> None:
         """Test that PermissionError is caught when reading table."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -119,7 +119,7 @@ class TestCoordinatorIOErrorHandling:
             assert len(logger.exception_calls) == 1
             assert "Failed to read dataset from file" in logger.exception_calls[0][0]
 
-    def test_read_table_handles_oserror(self, tmp_path) -> None:
+    def test_read_table_handles_oserror(self, tmp_path: Path) -> None:
         """Test that OSError is caught when reading table."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -149,7 +149,7 @@ class TestCoordinatorIOErrorHandling:
             assert len(logger.exception_calls) == 1
             assert "Failed to read dataset from file" in logger.exception_calls[0][0]
 
-    def test_read_table_handles_parser_error(self, tmp_path) -> None:
+    def test_read_table_handles_parser_error(self, tmp_path: Path) -> None:
         """Test that ParserError is caught when reading table."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -179,7 +179,7 @@ class TestCoordinatorIOErrorHandling:
             assert len(logger.exception_calls) == 1
             assert "Failed to parse CSV file" in logger.exception_calls[0][0]
 
-    def test_read_table_file_not_exists(self, tmp_path) -> None:
+    def test_read_table_file_not_exists(self, tmp_path: Path) -> None:
         """Test that non-existent file doesn't cause errors."""
         datafile = tmp_path / "nonexistent.csv"
         logger = MockLogger()
@@ -202,7 +202,7 @@ class TestCoordinatorIOErrorHandling:
         # Verify no exception was logged (file doesn't exist, so we skip reading)
         assert len(logger.exception_calls) == 0
 
-    def test_store_table_success(self, tmp_path) -> None:
+    def test_store_table_success(self, tmp_path: Path) -> None:
         """Test that store operation works on success."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()
@@ -229,7 +229,7 @@ class TestCoordinatorIOErrorHandling:
         # Verify no error was logged
         assert len(logger.exception_calls) == 0
 
-    def test_read_table_success(self, tmp_path) -> None:
+    def test_read_table_success(self, tmp_path: Path) -> None:
         """Test that read operation works on success."""
         datafile = tmp_path / "test.csv"
         logger = MockLogger()

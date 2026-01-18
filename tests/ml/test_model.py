@@ -26,7 +26,7 @@ from test_fixtures import MockLogger  # noqa: E402
 
 
 def convert_df_to_numpy(df: pd.DataFrame) -> np.ndarray:
-    """Helper function to convert DataFrame to numpy for testing."""
+    """Convert DataFrame to numpy for testing."""
     return df.to_numpy()
 
 
@@ -310,7 +310,7 @@ class TestModelPredictWithNormalization:
         result = model.predict(test_numpy)
 
         assert result is not None
-        label, probability = result
+        label = result[0]
         assert label in ["off", "on"]
 
 
@@ -782,7 +782,7 @@ class TestModelSamplingMethod:
 
         # After random oversampling, should have balanced classes
         y_result = result[:, -1]
-        unique, counts = np.unique(y_result, return_counts=True)
+        counts = np.unique(y_result, return_counts=True)[1]
         # Both classes should have equal counts
         assert counts[0] == counts[1]
 

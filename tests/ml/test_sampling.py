@@ -315,7 +315,7 @@ class TestSMOTE:
         assert x_resampled.shape[0] == 4
 
         # Class distribution should remain balanced
-        unique, counts = np.unique(y_resampled, return_counts=True)
+        counts = np.unique(y_resampled, return_counts=True)[1]
         assert counts[0] == counts[1] == 2
 
     def test_multiple_classes(self) -> None:
