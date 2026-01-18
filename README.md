@@ -9,7 +9,7 @@ A Home Assistant custom integration that uses machine learning to predict entity
 
 ## Features
 
-- 🤖 **Machine Learning Integration**: Uses logistic regression to learn patterns from your Home Assistant entities
+- 🤖 **Machine Learning**: Uses logistic regression to learn patterns from your own Home Assistant usage
 - 📊 **Training Mode**: Collect data from your entities to build prediction models
 - 🎯 **Production Mode**: Make real-time predictions based on trained models
 - 📈 **Performance Monitoring**: Track model accuracy and dataset size
@@ -54,7 +54,7 @@ The integration creates these entities:
 1. **Training Phase**: Set mode to TRAINING and let your home operate normally for days/weeks. Data is automatically collected. Monitor Dataset Size sensor.
 2. **Train Model**: Once you have 10+ samples, click **Run Training**. Check Prediction Performance sensor for accuracy.
 3. **Production**: Set mode to PRODUCTION to make real-time predictions based on trained model.
-4. **Automation**: Create a Home Assistant automation that triggers when the prediction changes to control your target entity (e.g., switch lights). This is a security measure to ensure predictions don't directly control devices.
+4. **Automation**: Create a Home Assistant automation that triggers when the prediction changes to actually control your target entity (e.g., switch lights). This is a security measure to ensure predictions don't directly control devices.
 
 ## Example Use Cases
 
