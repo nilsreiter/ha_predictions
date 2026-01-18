@@ -40,9 +40,9 @@ def accuracy(y_pred: np.ndarray, y_gold: np.ndarray) -> float:
 def precision_recall_fscore(
     y_pred: np.ndarray,
     y_gold: np.ndarray,
-    class_labels: list[str] | NoneType = None,
+    class_labels: list[str] | None = None,
     beta: float = 1.0,
-) -> dict[str, dict[str, float]]:
+) -> dict[Any, dict[str, float]]:
     """
     Calculate precision, recall and f-score of the model.
 
@@ -60,10 +60,7 @@ def precision_recall_fscore(
     classes = [0, 1]
     scores: dict[str, dict[Any, float]] = {PRECISION: {}, RECALL: {}, F_SCORE: {}}
     for cls in classes:
-        if class_labels is not None:
-            cls_label = class_labels[cls]
-        else:
-            cls_label = cls
+        cls_label = class_labels[cls] if class_labels is not None else cls
 
         true_positives = ((y_pred == cls) & (y_gold == cls)).sum()
         predicted_positives = (y_pred == cls).sum()
@@ -92,9 +89,17 @@ def precision_recall_fscore(
             )
 
     scores[PRECISION][MACRO_AVERAGE] = sum(scores[PRECISION].values()) / len(classes)
-
     scores[RECALL][MACRO_AVERAGE] = sum(scores[RECALL].values()) / len(classes)
-
     scores[F_SCORE][MACRO_AVERAGE] = sum(scores[F_SCORE].values()) / len(classes)
 
-    return scores
+    all_inner_keys = {k for d in scores.values() for k in d}
+
+    # transpose, such that the class is the outer key
+    return {
+        inner_key: {
+            outer_key: scores[outer_key][inner_key]
+            for outer_key in scores
+            if inner_key in scores[outer_key]
+        }
+        for inner_key in all_inner_keys
+    }

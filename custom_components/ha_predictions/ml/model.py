@@ -19,8 +19,7 @@ class Model:
     def __init__(self, logger: Logger) -> None:
         """Initialize the Model class."""
         self.logger = logger
-        self.accuracy: float | NoneType = None
-        self.prf: dict[str, dict[str, float]] | NoneType = None
+        self.scores: tuple[float, dict[str, dict[str, float]]] | NoneType = None
         self.factors: dict[int, Any] = {}
         self.model_eval: LogisticRegression | None = None
         self.model_final: LogisticRegression | None = None
@@ -217,18 +216,18 @@ class Model:
 
         y_pred = self.model_eval.predict(x_test)[0]
         if y_pred is not None:
-            self.accuracy = accuracy(y_pred, y_test)
-            self.prf = precision_recall_fscore(
-                y_pred, y_test, class_labels=factors[len(factors) - 1]
+            self.scores = (
+                accuracy(y_pred, y_test),
+                precision_recall_fscore(
+                    y_pred, y_test, class_labels=factors[len(factors) - 1]
+                ),
             )
             self.logger.debug(
-                "Evaluation results - Accuracy: %s, PRF: %s",
-                str(self.accuracy),
-                str(self.prf),
+                "Evaluation results - Accuracy: %s",
+                str(self.scores[0]),
             )
         else:
-            self.accuracy = None
-            self.prf = None
+            self.scores = None
 
     def _factorize(self, data: np.ndarray) -> tuple[np.ndarray, dict]:
         """
