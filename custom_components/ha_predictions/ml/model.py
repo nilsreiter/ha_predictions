@@ -251,7 +251,7 @@ class Model:
         self.logger.debug("Training begins")
         self.model_eval.fit(x_train, y_train)
         self.logger.debug("Training ends, model: %s", str(self.model_eval))
-        self.accuracy = self.model_eval.score(x_test, y_test)
+        self.accuracy = self.model_eval.accuracy(x_test, y_test)
 
     def _apply_filtering(
         self,
