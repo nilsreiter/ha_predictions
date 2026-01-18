@@ -56,7 +56,7 @@ def precision_recall_fscore(
     Arguments:
         y_pred (np.ndarray): Predicted labels.
         y_gold (np.ndarray): True labels.
-        class_labels (list[str] | None): Optional list of human-readable class
+        class_labels (np.ndarray | None): Optional array of human-readable class
             labels corresponding to the integer class IDs used in ``y_pred`` and
             ``y_gold`` (currently assumed to be ``0`` and ``1``). If provided,
             these labels will be used as keys in the returned dictionaries.
