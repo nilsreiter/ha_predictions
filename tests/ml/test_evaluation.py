@@ -61,7 +61,7 @@ class TestPrecisionRecallFscore:
 
         scores = precision_recall_fscore(y_pred, y_gold)
         for metric in [PRECISION, RECALL, F_SCORE]:
-            for cls in ["0", "1"]:
+            for cls in [0, 1]:
                 assert scores[metric][cls] == 1.0
 
     def test_imperfect_predictions(self) -> None:
@@ -72,14 +72,14 @@ class TestPrecisionRecallFscore:
         scores = precision_recall_fscore(y_pred, y_gold)
 
         # Class 0
-        assert scores[PRECISION]["0"] == 0.5  # 1 TP / (1 TP + 1 FP)
-        assert scores[RECALL]["0"] == 0.5  # 1 TP / (1 TP + 1 FN)
-        assert np.isclose(scores[F_SCORE]["0"], 0.5)  # F1 score
+        assert scores[PRECISION][0] == 0.5  # 1 TP / (1 TP + 1 FP)
+        assert scores[RECALL][0] == 0.5  # 1 TP / (1 TP + 1 FN)
+        assert np.isclose(scores[F_SCORE][0], 0.5)  # F1 score
 
         # Class 1
-        assert scores[PRECISION]["1"] == 0.5  # 1 TP / (1 TP + 1 FP)
-        assert scores[RECALL]["1"] == 0.5  # 1 TP / (1 TP + 1 FN)
-        assert np.isclose(scores[F_SCORE]["1"], 0.5)  # F1 score
+        assert scores[PRECISION][1] == 0.5  # 1 TP / (1 TP + 1 FP)
+        assert scores[RECALL][1] == 0.5  # 1 TP / (1 TP + 1 FN)
+        assert np.isclose(scores[F_SCORE][1], 0.5)  # F1 score
 
     def test_bad_predictions(self) -> None:
         """Test PRF with imperfect predictions."""
@@ -89,14 +89,14 @@ class TestPrecisionRecallFscore:
         scores = precision_recall_fscore(y_pred, y_gold)
 
         # Class 0
-        assert scores[PRECISION]["0"] == 0.5  # 2 TP / (2 TP + 2 FP)
-        assert scores[RECALL]["0"] == 1  # 2 TP / (2 TP + 0 FN)
-        assert np.isclose(scores[F_SCORE]["0"], 2 / 3)  # F1 score
+        assert scores[PRECISION][0] == 0.5  # 2 TP / (2 TP + 2 FP)
+        assert scores[RECALL][0] == 1  # 2 TP / (2 TP + 0 FN)
+        assert np.isclose(scores[F_SCORE][0], 2 / 3)  # F1 score
 
         # Class 1
-        assert scores[PRECISION]["1"] == 0  # 0 TP / (0 TP + 0 FP) -> defined as 0
-        assert scores[RECALL]["1"] == 0  # 0 TP / (0 TP + 2 FN)
-        assert np.isclose(scores[F_SCORE]["1"], 0)  # F1 score
+        assert scores[PRECISION][1] == 0  # 0 TP / (0 TP + 0 FP) -> defined as 0
+        assert scores[RECALL][1] == 0  # 0 TP / (0 TP + 2 FN)
+        assert np.isclose(scores[F_SCORE][1], 0)  # F1 score
 
     def test_macro_average_simple_example(self) -> None:
         """Test macro average calculation with simple example."""

@@ -1,5 +1,6 @@
 """Evaluation metrics for ML models."""
 
+from typing import Any
 import numpy as np
 
 from .const import F_SCORE, MACRO_AVERAGE, PRECISION, RECALL
@@ -53,7 +54,7 @@ def precision_recall_fscore(
 
     """
     classes = [0, 1]
-    scores: dict[str, dict[str, float]] = {PRECISION: {}, RECALL: {}, F_SCORE: {}}
+    scores: dict[str, dict[Any, float]] = {PRECISION: {}, RECALL: {}, F_SCORE: {}}
     for cls in classes:
         true_positives = ((y_pred == cls) & (y_gold == cls)).sum()
         predicted_positives = (y_pred == cls).sum()
@@ -61,36 +62,36 @@ def precision_recall_fscore(
 
         # Precision
         if predicted_positives == 0:
-            scores[PRECISION][str(cls)] = 0.0
+            scores[PRECISION][cls] = 0.0
         else:
-            scores[PRECISION][str(cls)] = true_positives / predicted_positives
+            scores[PRECISION][cls] = true_positives / predicted_positives
 
         # Recall
         if gold_positives == 0:
-            scores[RECALL][str(cls)] = 0.0
+            scores[RECALL][cls] = 0.0
         else:
-            scores[RECALL][str(cls)] = true_positives / gold_positives
+            scores[RECALL][cls] = true_positives / gold_positives
 
         # F1 Score
-        prec = scores[PRECISION][str(cls)]
-        rec = scores[RECALL][str(cls)]
+        prec = scores[PRECISION][cls]
+        rec = scores[RECALL][cls]
         if prec + rec == 0:
-            scores[F_SCORE][str(cls)] = 0.0
+            scores[F_SCORE][cls] = 0.0
         else:
-            scores[F_SCORE][str(cls)] = (
+            scores[F_SCORE][cls] = (
                 (1 + beta**2) * (prec * rec) / ((beta**2 * prec) + rec)
             )
 
     scores[PRECISION][MACRO_AVERAGE] = sum(
-        scores[PRECISION][str(cls)] for cls in classes
+        scores[PRECISION][cls] for cls in classes
     ) / len(classes)
 
-    scores[RECALL][MACRO_AVERAGE] = sum(
-        scores[RECALL][str(cls)] for cls in classes
-    ) / len(classes)
+    scores[RECALL][MACRO_AVERAGE] = sum(scores[RECALL][cls] for cls in classes) / len(
+        classes
+    )
 
-    scores[F_SCORE][MACRO_AVERAGE] = sum(
-        scores[F_SCORE][str(cls)] for cls in classes
-    ) / len(classes)
+    scores[F_SCORE][MACRO_AVERAGE] = sum(scores[F_SCORE][cls] for cls in classes) / len(
+        classes
+    )
 
     return scores
