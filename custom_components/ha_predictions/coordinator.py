@@ -56,7 +56,7 @@ class HAPredictionUpdateCoordinator(DataUpdateCoordinator):
         """Initialize the coordinator."""
         super().__init__(*args, **kwargs)
         # Initialize instance variables to avoid sharing between coordinator instances
-        self.scores: tuple[float, dict[str, dict[str, float]]] | NoneType = None
+        self.scores: tuple[float, dict[Any, dict[str, float]]] | NoneType = None
         self.entity_registry: list[HAPredictionEntity] = []
         self.dataset: pd.DataFrame | NoneType = None
         self.dataset_size: int = 0
