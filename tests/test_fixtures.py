@@ -5,7 +5,7 @@ from typing import Any
 
 class MockLogger:
     """Mock logger for testing.
-    
+
     This mock logger can be used in tests that require a logger object
     but don't need actual logging functionality. It provides no-op
     implementations of common logger methods.

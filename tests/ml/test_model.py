@@ -3,8 +3,6 @@
 import contextlib
 import sys
 from pathlib import Path
-from types import NoneType
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -23,9 +21,7 @@ sys.path.insert(0, str(ha_predictions_path))
 
 from ml.const import SamplingStrategy  # noqa: E402
 from ml.exceptions import ModelNotTrainedError  # noqa: E402
-from ml.logistic_regression import LogisticRegression  # noqa: E402
 from ml.model import Model  # noqa: E402
-from ml.sampling import random_oversample, smote  # noqa: E402
 from test_fixtures import MockLogger  # noqa: E402
 
 
