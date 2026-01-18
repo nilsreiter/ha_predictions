@@ -44,8 +44,6 @@ def precision_recall_fscore(
     """
     Calculate precision, recall and f-score of the model.
 
-    Calculate precision, recall and F-score of the model.
-
     This function currently assumes **binary classification** with class labels
     ``0`` and ``1``. Both ``y_pred`` and ``y_gold`` are expected to contain only
     these two classes. If ``class_labels`` is provided, it must be indexable by
