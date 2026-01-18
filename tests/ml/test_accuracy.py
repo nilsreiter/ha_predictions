@@ -28,8 +28,8 @@ class TestAccuracy:
         # For this case, should achieve perfect accuracy
         assert score == 1.0
 
-    def test_score_calculation(self) -> None:
-        """Test that score calculates accuracy correctly."""
+    def test_accuracy_calculation(self) -> None:
+        """Test that accuracy is calculated correctly."""
         # Manually construct y so we know what score to expect
         y_gold = np.array([0, 0, 1, 1])
 
