@@ -3,7 +3,7 @@
 [![License][license-shield]](LICENSE)
 [![hacs][hacsbadge]][hacs]
 
-A Home Assistant custom integration that uses machine learning to predict entity states based on feature entities. Train models to predict when lights turn on/off, switches change state, or other automations trigger based on the state of other entities in your home.
+A Home Assistant custom integration that uses machine learning to predict entity states based on feature entities. Train models to automatically switch lightson/off, change switches or start playing music, *based on your previous behaviour and without writing complex automations. 
 
 > ⚠️ **Alpha Stage**: This integration is currently in alpha development. Features may change, and there may be bugs or incomplete functionality. Use at your own risk and please report any issues you encounter.
 
