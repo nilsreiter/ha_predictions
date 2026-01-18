@@ -216,10 +216,15 @@ class Model:
 
         y_pred = self.model_eval.predict(x_test)[0]
         if y_pred is not None:
+            # Use the actual target column index (last column) to get class labels
+            target_col_idx = data_encoded.shape[1] - 1
+            class_labels = factors.get(target_col_idx)
             self.scores = (
                 accuracy(y_pred, y_test),
                 precision_recall_fscore(
-                    y_pred, y_test, class_labels=factors[len(factors) - 1]
+                    y_pred,
+                    y_test,
+                    class_labels=class_labels,
                 ),
             )
             self.logger.debug(
