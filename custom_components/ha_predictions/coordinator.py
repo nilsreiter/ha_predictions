@@ -36,6 +36,7 @@ from .ml.exceptions import ModelNotTrainedError
 from .ml.model import Model, SamplingStrategy
 
 if TYPE_CHECKING:
+    from collections.abc import Generator
     from types import NoneType
 
     from homeassistant.core import Event, EventStateChangedData
@@ -425,7 +426,7 @@ class HomeAssistantStateExtractor:
         self.session = session
 
     @contextmanager
-    def session_scope(self):
+    def session_scope(self) -> Generator[Session, Any, Any]:
         """
         Provide a transactional scope for database operations.
 
@@ -527,8 +528,8 @@ class HomeAssistantStateExtractor:
             if last_state[target_entity] == "":
                 continue
 
-            # Keep rows that have 2 or fewer None values
-            if sum(last_state[e] == "" for e in entities) <= 2:
+            # Add only rows that have at least 2 actual values
+            if sum(last_state[e] != "" for e in entities) >= 2:  # noqa: PLR2004
                 pivot_rows.append(row)
 
         return pivot_rows

@@ -9,3 +9,8 @@ class SamplingStrategy(Enum):
     NONE = "none"
     RANDOM_OVER = "random_oversample"
     SMOTE = "smote"
+
+
+EXCEPTION_SMOTE_NOT_ENOUGH_SAMPLES = (
+    "Not enough samples to perform SMOTE. Class %s has only %d samples."
+)

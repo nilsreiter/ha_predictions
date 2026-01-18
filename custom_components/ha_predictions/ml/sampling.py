@@ -4,6 +4,8 @@ from typing import Any
 
 import numpy as np
 
+from custom_components.ha_predictions.ml.const import EXCEPTION_SMOTE_NOT_ENOUGH_SAMPLES
+
 
 def random_oversample(
     x: np.ndarray, y: np.ndarray, target_class: Any | None = None
@@ -81,11 +83,12 @@ def smote(
         n_samples_needed = max_count - cls_count
 
         if n_samples_needed > 0 and (target_class is None or cls == target_class):
-            if cls_count < 2:
+            if cls_count < 2:  # noqa: PLR2004
                 # Can't apply SMOTE to single-sample classes
                 raise ValueError(
-                    f"Cannot apply SMOTE to class {cls} with only {cls_count} sample(s). "
-                    f"At least 2 samples are required."
+                    EXCEPTION_SMOTE_NOT_ENOUGH_SAMPLES,
+                    cls,
+                    cls_count,
                 )
 
             x_cls = x[cls_indices]
