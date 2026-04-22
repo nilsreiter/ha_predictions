@@ -4,4 +4,4 @@ pip>=21.3.1
 pytest>=8.0.0
 ruff==0.14.13
 pandas>=2.0.0
-numpy>=1.26.4
+numpy>=2.4.4
