@@ -310,7 +310,7 @@ class Model:
                     valid = False
                     break
                 try:
-                    if bool(np.isnan(value)):
+                    if not np.isfinite(value):
                         valid = False
                         break
                 except TypeError:
