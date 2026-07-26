@@ -10,3 +10,29 @@ logger:
   default: warning
   logs:
     custom_components.ha_predictions: debug
+
+# Local development entities for manual integration testing.
+input_boolean:
+  test_prediction_target:
+    name: Test Prediction Target
+    icon: mdi:lightbulb
+  test_motion:
+    name: Test Motion
+    icon: mdi:motion-sensor
+  test_presence:
+    name: Test Presence
+    icon: mdi:account
+
+input_number:
+  test_hour:
+    name: Test Hour
+    min: 0
+    max: 23
+    step: 1
+    mode: box
+  test_ambient_lux:
+    name: Test Ambient Lux
+    min: 0
+    max: 1000
+    step: 1
+    mode: box

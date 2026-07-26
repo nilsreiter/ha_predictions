@@ -250,10 +250,11 @@ class Model:
         for col_idx in range(data.shape[1]):
             column_data = data[:, col_idx]
 
-            # Check if column contains non-numeric data
-            if column_data.dtype == object or not np.issubdtype(
-                column_data.dtype, np.number
-            ):
+            # Pandas may return a mixed DataFrame as object dtype. Try numeric
+            # conversion per column before treating it as categorical.
+            try:
+                numeric_column = column_data.astype(float)
+            except (TypeError, ValueError):
                 # Use numpy.unique to get unique values and their indices
                 unique_values, inverse_indices = np.unique(
                     column_data, return_inverse=True
@@ -264,7 +265,7 @@ class Model:
                 data_encoded[:, col_idx] = inverse_indices.astype(float)
             else:
                 # Copy numeric data as-is
-                data_encoded[:, col_idx] = column_data.astype(float)
+                data_encoded[:, col_idx] = numeric_column
         return data_encoded, factors
 
     def _apply_filtering(
@@ -298,6 +299,24 @@ class Model:
         if filter_unknown:
             data = data[data[:, -1] != "unknown"]
             data = data[data[:, -1] != "Unknown"]
+
+        # Recorder imports can contain rows before every feature had a value.
+        # Do not pass incomplete mixed-type rows to the encoder.
+        valid_rows = []
+        for row in data:
+            valid = True
+            for value in row:
+                if value is None or value == "":
+                    valid = False
+                    break
+                try:
+                    if not np.isfinite(value):
+                        valid = False
+                        break
+                except TypeError:
+                    pass
+            valid_rows.append(valid)
+        data = data[np.array(valid_rows, dtype=bool)]
 
         self.logger.debug("Number of instances after filtering: %i", data.shape[0])
         return data
