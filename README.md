@@ -72,6 +72,132 @@ The integration creates these entities:
 
 Based on [integration_blueprint](https://github.com/ludeeus/integration_blueprint). See [CONTRIBUTING.md](CONTRIBUTING.md) for setup details.
 
+### Docker development environment
+
+The repository includes a standalone Home Assistant development environment. It
+runs Home Assistant in Docker and loads the integration directly from the local
+working tree. The production integration is not installed through HACS in this
+environment.
+
+Docker and Docker Compose are required.
+
+#### Start Home Assistant
+
+From the repository root, start the development instance:
+
+```bash
+docker compose up -d
+docker compose logs -f homeassistant
+```
+
+Open <http://localhost:8123> and complete the initial Home Assistant setup. The
+Compose configuration uses these mounts:
+
+- `./custom_components` → `/config/custom_components`: the current local source
+  code of the integration
+- `./config` → `/config`: the local Home Assistant configuration and runtime data
+
+The local `config` directory is ignored by Git except for
+`config/configuration.yaml`. Training data, the recorder database and Home
+Assistant-generated files therefore stay local.
+
+#### Configure the test integration
+
+The development configuration creates these test entities:
+
+| Purpose | Entity |
+| --- | --- |
+| Prediction target | `input_boolean.test_prediction_target` |
+| Motion feature | `input_boolean.test_motion` |
+| Presence feature | `input_boolean.test_presence` |
+| Simulated hour | `input_number.test_hour` |
+| Ambient light | `input_number.test_ambient_lux` |
+
+In Home Assistant, go to **Settings → Devices & services → Add integration** and
+add **HA Predictions**. Configure it as follows:
+
+- **Target Entity:** `input_boolean.test_prediction_target`
+- **Feature Entities:** `input_boolean.test_motion`, `input_boolean.test_presence`,
+  `input_number.test_hour`, and `input_number.test_ambient_lux`
+
+Changing the feature entities resets the training data. Keep the operation mode on
+`TRAINING` while collecting data. For a first run, select `None` as the sampling
+strategy so that the raw dataset can be inspected without resampling.
+
+#### Generate realistic test data
+
+The repository contains a reproducible test-data generator. It uses the Home
+Assistant REST API to change the test entities, so the integration processes the
+data exactly like normal state changes.
+
+Create a Long-Lived Access Token in your Home Assistant user profile. Do not commit
+the token or put it into a configuration file. Run the generator locally with:
+
+```bash
+python3 scripts/generate_training_data.py --token YOUR_TOKEN
+```
+
+By default, it creates 180 simulated situations across several days. Each situation
+varies the hour, presence, motion and ambient light. The target is derived from
+these values with a small amount of noise to resemble real household data. Because
+each situation changes several Home Assistant entities, the integration usually
+collects several hundred dataset rows.
+
+Useful options:
+
+```bash
+python3 scripts/generate_training_data.py \
+  --token YOUR_TOKEN \
+  --samples 500 \
+  --seed 123 \
+  --delay 0.05
+```
+
+Use `--url` when Home Assistant is not running at `http://localhost:8123`. The
+fixed `--seed` makes a test run reproducible.
+
+#### Train and test predictions
+
+After generating data:
+
+1. Check the **Dataset size** sensor.
+2. Press **Run Training**.
+3. Check **Prediction Performance** and the per-class metrics in its attributes.
+4. Change **Operation Mode** to `PRODUCTION`.
+5. Change the test feature entities and observe **Current Prediction**.
+
+#### Fast development cycle
+
+Python modules are loaded when Home Assistant starts. After changing integration
+code, restart the container to load the new code:
+
+```bash
+docker compose restart homeassistant
+docker compose logs -f homeassistant
+```
+
+Run the standalone tests and code checks from the repository root:
+
+```bash
+scripts/test
+scripts/lint
+```
+
+The existing devcontainer remains available as an alternative. It runs the same
+Home Assistant configuration with `scripts/develop`.
+
+#### Stop or reset the development instance
+
+Stop the instance with:
+
+```bash
+docker compose down
+```
+
+To reset the local Home Assistant state, remove the generated files below `config/`
+while keeping `config/configuration.yaml`. This removes the local HA user, recorder
+history, integration entries and training data.
+
 ## Support
 
 - [Report bugs and request features](https://github.com/nilsreiter/ha-predictions/issues)
